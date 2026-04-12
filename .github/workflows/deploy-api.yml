@@ -25,11 +25,6 @@ jobs:
             -c Release -r linux-x64 --self-contained true \
             -o ./publish/api
 
-      - name: Fix SqlClient for Linux
-        run: |
-          cp ./publish/api/runtimes/unix/lib/net6.0/Microsoft.Data.SqlClient.dll \
-             ./publish/api/Microsoft.Data.SqlClient.dll
-
       - name: Zip publish output
         run: |
           cd ./publish/api
