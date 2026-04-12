@@ -25,7 +25,7 @@ export class SignalRService {
   connect(tenantId: string): void {
     if (this.hub) return; // ya conectado
     this.hub = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl.replace('/api', '')}/hubs/solicitudes`)
+      .withUrl(`${environment.apiUrl.replace(/\/api$/, '')}/hubs/solicitudes`)
       .withAutomaticReconnect()
       .build();
 
