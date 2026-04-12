@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 import { CrearSolicitudRequest, Solicitud } from '../models/solicitud.model';
 import { environment } from '../../../environments/environment';
 
@@ -10,11 +11,11 @@ export class SolicitudesService {
   private readonly base = `${environment.apiUrl}/solicitudes`;
 
   getAll(): Observable<Solicitud[]> {
-    return this.http.get<Solicitud[]>(this.base);
+    return this.http.get<Solicitud[]>(this.base).pipe(timeout(15000));
   }
 
   getById(id: string): Observable<Solicitud> {
-    return this.http.get<Solicitud>(`${this.base}/${id}`);
+    return this.http.get<Solicitud>(`${this.base}/${id}`).pipe(timeout(15000));
   }
 
   crear(request: CrearSolicitudRequest): Observable<{ id: string }> {
