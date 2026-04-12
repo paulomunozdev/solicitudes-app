@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-shell',
@@ -36,11 +37,18 @@ import { MatIconModule } from '@angular/material/icon';
         </nav>
 
         <div class="sidebar__user">
-          <div class="sidebar__avatar">D</div>
+          @if (auth.user()?.picture) {
+            <img class="sidebar__avatar sidebar__avatar--img" [src]="auth.user()!.picture" [alt]="auth.user()!.name" />
+          } @else {
+            <div class="sidebar__avatar">{{ auth.user()?.name?.[0] ?? '?' }}</div>
+          }
           <div class="sidebar__user-info">
-            <p class="sidebar__user-name">Dev User</p>
-            <p class="sidebar__user-role">Admin</p>
+            <p class="sidebar__user-name">{{ auth.user()?.name ?? 'Usuario' }}</p>
+            <p class="sidebar__user-email">{{ auth.user()?.email ?? '' }}</p>
           </div>
+          <button class="sidebar__logout" (click)="logout()" title="Cerrar sesión">
+            <mat-icon>logout</mat-icon>
+          </button>
         </div>
       </aside>
 
@@ -132,7 +140,15 @@ import { MatIconModule } from '@angular/material/icon';
       color: #94a3b8; font-weight: 600; font-size: 13px;
     }
     .sidebar__user-name { color: #e2e8f0; font-size: 13px; font-weight: 500; margin: 0; }
-    .sidebar__user-role { color: #64748b; font-size: 11px; margin: 0; }
+    .sidebar__user-email { color: #64748b; font-size: 11px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+    .sidebar__avatar--img { object-fit: cover; border-radius: 50%; }
+    .sidebar__logout {
+      margin-left: auto; background: none; border: none; cursor: pointer;
+      color: #475569; padding: 4px; border-radius: 6px; display: flex;
+      align-items: center; transition: color .15s;
+    }
+    .sidebar__logout:hover { color: #f87171; }
+    .sidebar__logout mat-icon { font-size: 16px; width: 16px; height: 16px; }
 
     /* ── Main ── */
     .main {
@@ -143,4 +159,12 @@ import { MatIconModule } from '@angular/material/icon';
     }
   `],
 })
-export class ShellComponent {}
+export class ShellComponent {
+  readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/login']);
+  }
+}

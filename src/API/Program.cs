@@ -11,38 +11,16 @@ using Infrastructure.Persistence.Repositories;
 using Infrastructure.Realtime;
 using Infrastructure.ServiceBus;
 using MediatR;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Autenticación JWT (Azure AD B2C) ──────────────────────────
-// En desarrollo usamos un esquema bypass para probar sin token real
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddAuthentication("DevBypass")
-        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, DevBypassHandler>(
-            "DevBypass", _ => { });
-    builder.Services.AddAuthorization();
-}
-else
-{
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.Authority = builder.Configuration["AzureAdB2C:Authority"];
-            options.Audience = builder.Configuration["AzureAdB2C:ClientId"];
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true
-            };
-        });
-    builder.Services.AddAuthorization();
-}
+// ── Autenticación Google Identity Services ─────────────────────
+builder.Services.AddAuthentication("Google")
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, GoogleAuthHandler>(
+        "Google", _ => { });
+builder.Services.AddAuthorization();
 
 // ── Base de datos ──────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(opt =>
