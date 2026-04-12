@@ -33,7 +33,7 @@ jobs:
       - name: Deploy to Azure Functions
         run: |
           curl -X POST \
-            --user "${{ secrets.AZURE_DEPLOY_USER }}:${{ secrets.AZURE_DEPLOY_PWD }}" \
+            --user "${{ secrets.AZURE_FUNC_DEPLOY_USER }}:${{ secrets.AZURE_FUNC_DEPLOY_PWD }}" \
             --data-binary @./deploy-functions.zip \
             "https://func-solicitudesapp.scm.azurewebsites.net/api/zipdeploy?isAsync=true" \
             -w "\nHTTP Status: %{http_code}\n" \

@@ -34,7 +34,7 @@ jobs:
       - name: Deploy to Azure App Service
         run: |
           curl -X POST \
-            --user "${{ secrets.AZURE_DEPLOY_USER }}:${{ secrets.AZURE_DEPLOY_PWD }}" \
+            --user "${{ secrets.AZURE_API_DEPLOY_USER }}:${{ secrets.AZURE_API_DEPLOY_PWD }}" \
             --data-binary @./deploy-api.zip \
             "https://api-solicitudesapp-dyd2f7gcb2b6fva4.scm.brazilsouth-01.azurewebsites.net/api/publish?type=zip" \
             -w "\nHTTP Status: %{http_code}\n" \
