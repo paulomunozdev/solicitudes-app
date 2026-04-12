@@ -1,0 +1,28 @@
+# ── Build outputs ─────────────────────────────────────────────
+bin/
+obj/
+publish/
+dist/
+
+# ── Secrets / local config ────────────────────────────────────
+**/appsettings.Development.json
+**/local.settings.json
+
+# ── Deploy artifacts ──────────────────────────────────────────
+*.zip
+app-logs/
+app-logs.zip
+
+# ── .NET ──────────────────────────────────────────────────────
+*.user
+*.suo
+.vs/
+TestResults/
+
+# ── Node / Angular ────────────────────────────────────────────
+frontend/node_modules/
+frontend/.angular/
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log
+logs/

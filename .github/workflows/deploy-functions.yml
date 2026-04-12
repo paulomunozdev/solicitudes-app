@@ -1,0 +1,37 @@
+name: Deploy Azure Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/Functions/**'
+      - '.github/workflows/deploy-functions.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish Functions
+        run: |
+          dotnet publish src/Functions/Functions.csproj \
+            -c Release -o ./publish/functions
+
+      - name: Zip publish output
+        run: |
+          cd ./publish/functions
+          zip -r ../../deploy-functions.zip .
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: func-solicitudesapp
+          package: ./deploy-functions.zip
+          publish-profile: ${{ secrets.AZURE_FUNCTIONS_PUBLISH_PROFILE }}
