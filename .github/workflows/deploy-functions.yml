@@ -30,32 +30,11 @@ jobs:
           cd ./publish/functions
           zip -r ../../deploy-functions.zip .
 
-      - name: Deploy to Azure Functions via curl
-        env:
-          PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONS_PUBLISH_PROFILE }}
+      - name: Deploy to Azure Functions
         run: |
-          USER=$(echo "$PUBLISH_PROFILE" | python3 -c "
-          import sys, re
-          xml = sys.stdin.read()
-          m = re.search(r'publishMethod=\"ZipDeploy\"[^>]*userName=\"([^\"]+)\"', xml)
-          print(m.group(1) if m else '')
-          ")
-          PWD=$(echo "$PUBLISH_PROFILE" | python3 -c "
-          import sys, re
-          xml = sys.stdin.read()
-          m = re.search(r'publishMethod=\"ZipDeploy\"[^>]*userPWD=\"([^\"]+)\"', xml)
-          print(m.group(1) if m else '')
-          ")
-          URL=$(echo "$PUBLISH_PROFILE" | python3 -c "
-          import sys, re
-          xml = sys.stdin.read()
-          m = re.search(r'publishMethod=\"ZipDeploy\"[^>]*publishUrl=\"([^\"]+)\"', xml)
-          print(m.group(1) if m else '')
-          ")
-          echo "Deploying to $URL"
           curl -X POST \
-            --user "$USER:$PWD" \
+            --user "${{ secrets.AZURE_DEPLOY_USER }}:${{ secrets.AZURE_DEPLOY_PWD }}" \
             --data-binary @./deploy-functions.zip \
-            "https://$URL/api/zipdeploy?isAsync=true" \
+            "https://func-solicitudesapp.scm.azurewebsites.net/api/zipdeploy?isAsync=true" \
             -w "\nHTTP Status: %{http_code}\n" \
             --fail
