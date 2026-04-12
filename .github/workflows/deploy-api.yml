@@ -31,10 +31,33 @@ jobs:
           cd ./publish/api
           zip -r ../../deploy-api.zip .
 
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: api-solicitudesapp
-          publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
-          package: ./deploy-api.zip
-          deployment-method: zipDeploy
+      - name: Deploy to Azure App Service via curl
+        env:
+          PUBLISH_PROFILE: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
+        run: |
+          # Extraer credenciales del publish profile XML
+          USER=$(echo "$PUBLISH_PROFILE" | python3 -c "
+          import sys, re
+          xml = sys.stdin.read()
+          m = re.search(r'publishMethod=\"ZipDeploy\"[^>]*userName=\"([^\"]+)\"', xml)
+          print(m.group(1) if m else '')
+          ")
+          PWD=$(echo "$PUBLISH_PROFILE" | python3 -c "
+          import sys, re
+          xml = sys.stdin.read()
+          m = re.search(r'publishMethod=\"ZipDeploy\"[^>]*userPWD=\"([^\"]+)\"', xml)
+          print(m.group(1) if m else '')
+          ")
+          URL=$(echo "$PUBLISH_PROFILE" | python3 -c "
+          import sys, re
+          xml = sys.stdin.read()
+          m = re.search(r'publishMethod=\"ZipDeploy\"[^>]*publishUrl=\"([^\"]+)\"', xml)
+          print(m.group(1) if m else '')
+          ")
+          echo "Deploying to $URL"
+          curl -X POST \
+            --user "$USER:$PWD" \
+            --data-binary @./deploy-api.zip \
+            "https://$URL/api/publish?type=zip" \
+            -w "\nHTTP Status: %{http_code}\n" \
+            --fail
