@@ -14,11 +14,25 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class SolicitudesController(IMediator mediator) : ControllerBase
 {
-    /// <summary>Obtiene todas las solicitudes del tenant actual.</summary>
+    /// <summary>Obtiene solicitudes paginadas con filtros opcionales.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] EstadoSolicitud? estado, CancellationToken ct)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] EstadoSolicitud? estado,
+        [FromQuery] PrioridadSolicitud? prioridad,
+        [FromQuery] string? busqueda,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetSolicitudesQuery(estado), ct);
+        var result = await mediator.Send(new GetSolicitudesQuery(estado, prioridad, busqueda, page, pageSize), ct);
+        return Ok(result);
+    }
+
+    /// <summary>Retorna estadísticas agregadas del tenant.</summary>
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStats(CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetSolicitudesStatsQuery(), ct);
         return Ok(result);
     }
 

@@ -22,9 +22,9 @@ import { AuthService } from '../core/services/auth.service';
             <mat-icon>inbox</mat-icon>
             <span>Solicitudes</span>
           </a>
-          <a class="sidebar__item sidebar__item--disabled">
+          <a class="sidebar__item" routerLink="/dashboard" routerLinkActive="sidebar__item--active">
             <mat-icon>bar_chart</mat-icon>
-            <span>Reportes</span>
+            <span>Dashboard</span>
           </a>
           <a class="sidebar__item sidebar__item--disabled">
             <mat-icon>group</mat-icon>

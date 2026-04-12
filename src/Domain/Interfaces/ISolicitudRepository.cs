@@ -8,6 +8,9 @@ public interface ISolicitudRepository
     Task<Solicitud?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IEnumerable<Solicitud>> GetAllAsync(CancellationToken ct = default);
     Task<IEnumerable<Solicitud>> GetByEstadoAsync(EstadoSolicitud estado, CancellationToken ct = default);
+    Task<(IEnumerable<Solicitud> Items, int Total)> GetPagedAsync(
+        EstadoSolicitud? estado, PrioridadSolicitud? prioridad,
+        string? busqueda, int page, int pageSize, CancellationToken ct = default);
     Task AddAsync(Solicitud solicitud, CancellationToken ct = default);
     Task UpdateAsync(Solicitud solicitud, CancellationToken ct = default);
     Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);

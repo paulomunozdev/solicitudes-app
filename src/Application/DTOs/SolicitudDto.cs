@@ -2,6 +2,28 @@ using Domain.Enums;
 
 namespace Application.DTOs;
 
+public record PagedResult<T>(
+    IEnumerable<T> Items,
+    int Total,
+    int Page,
+    int PageSize
+)
+{
+    public int TotalPages => (int)Math.Ceiling((double)Total / PageSize);
+}
+
+public record SolicitudesStatsDto(
+    int Total,
+    int Pendientes,
+    int EnRevision,
+    int EnDesarrollo,
+    int Completadas,
+    int Rechazadas,
+    IEnumerable<SolicitudesPorDiaDto> PorDia
+);
+
+public record SolicitudesPorDiaDto(string Fecha, int Cantidad);
+
 public record SolicitudDto(
     Guid Id,
     string Titulo,

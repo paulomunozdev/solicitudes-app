@@ -40,6 +40,35 @@ public class SolicitudRepository(AppDbContext db) : ISolicitudRepository
         return Task.CompletedTask;
     }
 
+    public async Task<(IEnumerable<Solicitud> Items, int Total)> GetPagedAsync(
+        EstadoSolicitud? estado, PrioridadSolicitud? prioridad,
+        string? busqueda, int page, int pageSize, CancellationToken ct = default)
+    {
+        var q = db.Solicitudes
+            .Include(s => s.UsuarioCreador)
+            .Include(s => s.ConsultorAsignado)
+            .Include(s => s.Comentarios)
+            .AsQueryable();
+
+        if (estado.HasValue)
+            q = q.Where(s => s.Estado == estado.Value);
+
+        if (prioridad.HasValue)
+            q = q.Where(s => s.Prioridad == prioridad.Value);
+
+        if (!string.IsNullOrWhiteSpace(busqueda))
+            q = q.Where(s => s.Titulo.Contains(busqueda) || s.Descripcion.Contains(busqueda));
+
+        var total = await q.CountAsync(ct);
+        var items = await q
+            .OrderByDescending(s => s.CreadoEn)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
+
     public async Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
         => await db.Solicitudes.AnyAsync(s => s.Id == id, ct);
 }
