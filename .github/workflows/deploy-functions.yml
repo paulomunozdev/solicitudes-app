@@ -35,3 +35,4 @@ jobs:
           app-name: func-solicitudesapp
           package: ./deploy-functions.zip
           publish-profile: ${{ secrets.AZURE_FUNCTIONS_PUBLISH_PROFILE }}
+          scm-do-build-during-deployment: false

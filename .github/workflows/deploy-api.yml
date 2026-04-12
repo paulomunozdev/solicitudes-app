@@ -36,3 +36,4 @@ jobs:
           app-name: api-solicitudesapp
           publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
           package: ./deploy-api.zip
+          deployment-method: zipDeploy
