@@ -1,0 +1,41 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src/**
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  buildConfiguration: Release
+
+steps:
+  - task: UseDotNet@2
+    displayName: Setup .NET 8
+    inputs:
+      packageType: sdk
+      version: 8.0.x
+
+  - task: DotNetCoreCLI@2
+    displayName: Publish API
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: src/API/API.csproj
+      arguments: >
+        -c $(buildConfiguration)
+        -r linux-x64
+        --self-contained true
+        -o $(Build.ArtifactStagingDirectory)/api
+
+  - task: AzureWebApp@1
+    displayName: Deploy to Azure App Service
+    inputs:
+      azureSubscription: sc-solicitudesapp
+      appType: webAppLinux
+      appName: api-solicitudesapp
+      package: $(Build.ArtifactStagingDirectory)/api
+      runtimeStack: DOTNETCORE|8.0
