@@ -5,13 +5,26 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserService currentUser)
-    : DbContext(options)
+    : DbContext(options), IAppDbContext
+
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
     public DbSet<Comentario> Comentarios => Set<Comentario>();
     public DbSet<ArchivoAdjunto> Archivos => Set<ArchivoAdjunto>();
+    public DbSet<Categoria> Categorias => Set<Categoria>();
+
+    // IAppDbContext
+    Task<List<Categoria>> IAppDbContext.GetCategoriasAsync(bool soloActivas, CancellationToken ct)
+    {
+        var q = Set<Categoria>().AsQueryable();
+        if (soloActivas) q = q.Where(c => c.Activo);
+        return q.OrderBy(c => c.Nombre).ToListAsync(ct);
+    }
+    Task<Categoria?> IAppDbContext.GetCategoriaByIdAsync(Guid id, CancellationToken ct)
+        => Set<Categoria>().FirstOrDefaultAsync(c => c.Id == id, ct);
+    void IAppDbContext.AddCategoria(Categoria c) => Set<Categoria>().Add(c);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +71,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
             e.Property(x => x.Texto).IsRequired().HasMaxLength(5000);
             e.HasOne(x => x.Solicitud).WithMany(s => s.Comentarios).HasForeignKey(x => x.SolicitudId);
             e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
+        });
+
+        // Categoria
+        modelBuilder.Entity<Categoria>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Nombre).IsRequired().HasMaxLength(100);
+            e.Property(x => x.Color).HasMaxLength(20);
+            e.HasOne<Tenant>().WithMany().HasForeignKey(x => x.TenantId);
             e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
         });
 

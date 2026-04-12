@@ -20,6 +20,11 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
       },
       {
+        path: 'admin/categorias',
+        loadComponent: () =>
+          import('./features/admin/categorias/categorias-admin.component').then(m => m.CategoriasAdminComponent),
+      },
+      {
         path: 'solicitudes',
         children: [
           {

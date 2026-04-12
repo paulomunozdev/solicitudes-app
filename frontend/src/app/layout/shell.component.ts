@@ -30,9 +30,9 @@ import { AuthService } from '../core/services/auth.service';
             <mat-icon>group</mat-icon>
             <span>Usuarios</span>
           </a>
-          <a class="sidebar__item sidebar__item--disabled">
-            <mat-icon>settings</mat-icon>
-            <span>Configuración</span>
+          <a class="sidebar__item" routerLink="/admin/categorias" routerLinkActive="sidebar__item--active">
+            <mat-icon>label</mat-icon>
+            <span>Categorías</span>
           </a>
         </nav>
 

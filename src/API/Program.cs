@@ -45,6 +45,8 @@ builder.Services.AddValidatorsFromAssembly(typeof(Application.Solicitudes.Comman
 // ── Repositorios y servicios ───────────────────────────────────
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<Application.Common.Interfaces.IAppDbContext>(sp =>
+    sp.GetRequiredService<Infrastructure.Persistence.AppDbContext>());
 builder.Services.AddScoped<SolicitudRepository>();
 builder.Services.AddScoped<ComentarioRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

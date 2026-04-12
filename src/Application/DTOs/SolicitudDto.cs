@@ -67,3 +67,7 @@ public record AgregarComentarioRequest(
     string Texto,
     bool EsInterno
 );
+
+public record CategoriaDto(Guid Id, string Nombre, string Color, bool Activo);
+public record CrearCategoriaRequest(string Nombre, string Color);
+public record ActualizarCategoriaRequest(string Nombre, string Color, bool Activo);

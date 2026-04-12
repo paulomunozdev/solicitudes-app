@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { SolicitudesService } from '../../../core/services/solicitudes.service';
+import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
 import { PrioridadSolicitud, PRIORIDAD_LABELS } from '../../../core/models/solicitud.model';
 
 @Component({
@@ -56,8 +57,12 @@ import { PrioridadSolicitud, PRIORIDAD_LABELS } from '../../../core/models/solic
 
             <div class="field-group">
               <label class="field-label">Categoría <span class="optional">(opcional)</span></label>
-              <input class="field-input" formControlName="categoria"
-                placeholder="ej: CRM, Reportes, Integración" />
+              <select class="field-input field-select" formControlName="categoria">
+                <option value="">Sin categoría</option>
+                @for (cat of categorias(); track cat.id) {
+                  <option [value]="cat.nombre">{{ cat.nombre }}</option>
+                }
+              </select>
             </div>
           </div>
 
@@ -163,13 +168,19 @@ import { PrioridadSolicitud, PRIORIDAD_LABELS } from '../../../core/models/solic
     @keyframes spin { to { transform: rotate(360deg); } }
   `],
 })
-export class SolicitudesCreateComponent {
+export class SolicitudesCreateComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly svc = inject(SolicitudesService);
+  private readonly catSvc = inject(CategoriasService);
   private readonly router = inject(Router);
 
   readonly guardando = signal(false);
   readonly error = signal('');
+  readonly categorias = signal<Categoria[]>([]);
+
+  ngOnInit(): void {
+    this.catSvc.getAll(true).subscribe(data => this.categorias.set(data));
+  }
 
   readonly prioridades = Object.entries(PRIORIDAD_LABELS).map(([value, label]) => ({
     value: Number(value) as PrioridadSolicitud,
