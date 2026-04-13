@@ -19,10 +19,18 @@ public record SolicitudesStatsDto(
     int EnDesarrollo,
     int Completadas,
     int Rechazadas,
-    IEnumerable<SolicitudesPorDiaDto> PorDia
+    IEnumerable<SolicitudesPorDiaDto> PorDia,
+    IEnumerable<ConteoItemDto> PorBu,
+    IEnumerable<ConteoItemDto> PorCategoria,
+    IEnumerable<ConteoItemDto> PorPrioridad,
+    double TiempoPromedioResolucionDias,
+    int SinAsignar,
+    IEnumerable<ResolutorStatsDto> PorResolutor
 );
 
 public record SolicitudesPorDiaDto(string Fecha, int Cantidad);
+public record ConteoItemDto(string Nombre, int Cantidad);
+public record ResolutorStatsDto(string Nombre, int Asignadas, int Completadas);
 
 public record SolicitudDto(
     Guid Id,

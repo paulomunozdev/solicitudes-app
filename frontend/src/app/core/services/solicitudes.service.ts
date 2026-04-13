@@ -21,6 +21,12 @@ export interface SolicitudesStats {
   completadas: number;
   rechazadas: number;
   porDia: { fecha: string; cantidad: number }[];
+  porBu: { nombre: string; cantidad: number }[];
+  porCategoria: { nombre: string; cantidad: number }[];
+  porPrioridad: { nombre: string; cantidad: number }[];
+  tiempoPromedioResolucionDias: number;
+  sinAsignar: number;
+  porResolutor: { nombre: string; asignadas: number; completadas: number }[];
 }
 
 export interface SolicitudesFilter {
