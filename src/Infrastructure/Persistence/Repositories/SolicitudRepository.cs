@@ -44,6 +44,8 @@ public class SolicitudRepository(AppDbContext db) : ISolicitudRepository
         EstadoSolicitud? estado, PrioridadSolicitud? prioridad,
         string? busqueda, int page, int pageSize,
         string? soloBu = null, Guid? soloUsuarioId = null,
+        Guid? soloAsignadoId = null,
+        bool soloActivas = false, bool soloCerradas = false,
         CancellationToken ct = default)
     {
         var q = db.Solicitudes
@@ -58,7 +60,20 @@ public class SolicitudRepository(AppDbContext db) : ISolicitudRepository
         else if (soloUsuarioId.HasValue)
             q = q.Where(s => s.UsuarioCreadorId == soloUsuarioId.Value);
 
-        if (estado.HasValue)
+        // Vista: asignadas a mí
+        if (soloAsignadoId.HasValue)
+            q = q.Where(s => s.ConsultorAsignadoId == soloAsignadoId.Value);
+
+        // Vista: activas (en curso) vs cerradas — tienen prioridad sobre filtro por estado puntual
+        if (soloActivas)
+            q = q.Where(s => s.Estado == EstadoSolicitud.Pendiente
+                           || s.Estado == EstadoSolicitud.EnRevision
+                           || s.Estado == EstadoSolicitud.EnProgreso);
+        else if (soloCerradas)
+            q = q.Where(s => s.Estado == EstadoSolicitud.Resuelto
+                           || s.Estado == EstadoSolicitud.Cerrado
+                           || s.Estado == EstadoSolicitud.Cancelado);
+        else if (estado.HasValue)
             q = q.Where(s => s.Estado == estado.Value);
 
         if (prioridad.HasValue)

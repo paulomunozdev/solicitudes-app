@@ -1,3 +1,4 @@
+using Application.Common.Interfaces;
 using Application.DTOs;
 using Application.Solicitudes.Commands;
 using Application.Solicitudes.Queries;
@@ -12,9 +13,9 @@ namespace API.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class SolicitudesController(IMediator mediator) : ControllerBase
+public class SolicitudesController(IMediator mediator, ICurrentUserService currentUser) : ControllerBase
 {
-    /// <summary>Obtiene solicitudes paginadas con filtros opcionales.</summary>
+    /// <summary>Obtiene solicitudes paginadas con filtros y vistas opcionales.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] EstadoSolicitud? estado,
@@ -22,9 +23,15 @@ public class SolicitudesController(IMediator mediator) : ControllerBase
         [FromQuery] string? busqueda,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
+        [FromQuery] bool soloMias = false,
+        [FromQuery] bool soloActivas = false,
+        [FromQuery] bool soloCerradas = false,
+        [FromQuery] bool soloAsignadaAMi = false,
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetSolicitudesQuery(estado, prioridad, busqueda, page, pageSize), ct);
+        var result = await mediator.Send(new GetSolicitudesQuery(
+            estado, prioridad, busqueda, page, pageSize,
+            soloMias, soloActivas, soloCerradas, soloAsignadaAMi), ct);
         return Ok(result);
     }
 
@@ -56,11 +63,12 @@ public class SolicitudesController(IMediator mediator) : ControllerBase
         return AcceptedAtAction(nameof(GetById), new { id }, new { id });
     }
 
-    /// <summary>Actualiza el estado de una solicitud. Solo Consultores y Admins.</summary>
+    /// <summary>Actualiza el estado de una solicitud. Solo Gestor y Admin.</summary>
     [HttpPatch("{id:guid}/estado")]
-    [Authorize(Roles = "Consultor,Admin")]
     public async Task<IActionResult> UpdateEstado(Guid id, [FromBody] ActualizarEstadoRequest req, CancellationToken ct)
     {
+        if (currentUser.Rol != RolUsuario.Gestor && currentUser.Rol != RolUsuario.Admin)
+            return Forbid();
         await mediator.Send(new ActualizarEstadoCommand(id, req.NuevoEstado), ct);
         return NoContent();
     }

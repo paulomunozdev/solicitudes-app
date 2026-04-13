@@ -29,6 +29,10 @@ export interface SolicitudesFilter {
   busqueda?: string;
   page?: number;
   pageSize?: number;
+  soloMias?: boolean;
+  soloActivas?: boolean;
+  soloCerradas?: boolean;
+  soloAsignadaAMi?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -38,11 +42,15 @@ export class SolicitudesService {
 
   getAll(filter: SolicitudesFilter = {}): Observable<PagedResult<Solicitud>> {
     let params = new HttpParams();
-    if (filter.estado != null)    params = params.set('estado',    filter.estado);
-    if (filter.prioridad != null) params = params.set('prioridad', filter.prioridad);
-    if (filter.busqueda)          params = params.set('busqueda',  filter.busqueda);
-    if (filter.page)              params = params.set('page',      filter.page);
-    if (filter.pageSize)          params = params.set('pageSize',  filter.pageSize);
+    if (filter.estado != null)        params = params.set('estado',          filter.estado);
+    if (filter.prioridad != null)     params = params.set('prioridad',       filter.prioridad);
+    if (filter.busqueda)              params = params.set('busqueda',         filter.busqueda);
+    if (filter.page)                  params = params.set('page',             filter.page);
+    if (filter.pageSize)              params = params.set('pageSize',         filter.pageSize);
+    if (filter.soloMias)              params = params.set('soloMias',         true);
+    if (filter.soloActivas)           params = params.set('soloActivas',      true);
+    if (filter.soloCerradas)          params = params.set('soloCerradas',     true);
+    if (filter.soloAsignadaAMi)       params = params.set('soloAsignadaAMi',  true);
     return this.http.get<PagedResult<Solicitud>>(this.base, { params }).pipe(timeout(15000));
   }
 

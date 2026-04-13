@@ -11,7 +11,11 @@ public record GetSolicitudesQuery(
     PrioridadSolicitud? Prioridad = null,
     string? Busqueda = null,
     int Page = 1,
-    int PageSize = 10
+    int PageSize = 10,
+    bool SoloMias = false,
+    bool SoloActivas = false,
+    bool SoloCerradas = false,
+    bool SoloAsignadaAMi = false
 ) : IRequest<PagedResult<SolicitudDto>>;
 
 public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentUser)
@@ -19,9 +23,9 @@ public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentU
 {
     public async Task<PagedResult<SolicitudDto>> Handle(GetSolicitudesQuery query, CancellationToken ct)
     {
-        // Calcular filtros de visibilidad según rol
-        string? soloBu       = null;
-        Guid?   soloUsuario  = null;
+        // Visibilidad base según rol
+        string? soloBu      = null;
+        Guid?   soloUsuario = null;
 
         if (currentUser.Rol is RolUsuario.Solicitante or RolUsuario.Observador)
         {
@@ -31,9 +35,22 @@ public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentU
                 soloUsuario = currentUser.UserId;
         }
 
+        // Vista "Mis solicitudes": override visibilidad base, mostrar solo las creadas por mí
+        if (query.SoloMias)
+        {
+            soloBu      = null;
+            soloUsuario = currentUser.UserId;
+        }
+
+        // Vista "Asignadas a mí": solo para Gestor/Admin
+        Guid? soloAsignadoId = query.SoloAsignadaAMi
+            && currentUser.Rol is RolUsuario.Gestor or RolUsuario.Admin
+            ? currentUser.UserId : null;
+
         var (solicitudes, total) = await uow.Solicitudes.GetPagedAsync(
             query.Estado, query.Prioridad, query.Busqueda, query.Page, query.PageSize,
-            soloBu, soloUsuario, ct);
+            soloBu, soloUsuario, soloAsignadoId,
+            query.SoloActivas, query.SoloCerradas, ct);
 
         var items = solicitudes.Select(s => new SolicitudDto(
             s.Id, s.Titulo, s.Descripcion,

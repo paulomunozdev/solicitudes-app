@@ -12,6 +12,8 @@ public interface ISolicitudRepository
         EstadoSolicitud? estado, PrioridadSolicitud? prioridad,
         string? busqueda, int page, int pageSize,
         string? soloBu = null, Guid? soloUsuarioId = null,
+        Guid? soloAsignadoId = null,
+        bool soloActivas = false, bool soloCerradas = false,
         CancellationToken ct = default);
     Task AddAsync(Solicitud solicitud, CancellationToken ct = default);
     Task UpdateAsync(Solicitud solicitud, CancellationToken ct = default);

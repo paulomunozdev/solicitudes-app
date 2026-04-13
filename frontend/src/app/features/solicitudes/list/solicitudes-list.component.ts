@@ -6,7 +6,26 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
 import { SolicitudesService } from '../../../core/services/solicitudes.service';
 import { SignalRService } from '../../../core/services/signalr.service';
-import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../../../core/models/solicitud.model';
+import { AuthService } from '../../../core/services/auth.service';
+import { Solicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../../../core/models/solicitud.model';
+
+type Vista = 'todas' | 'mias' | 'pendientes' | 'activas' | 'cerradas' | 'asignadas';
+
+interface TabConfig {
+  id: Vista;
+  label: string;
+  icon: string;
+  soloGestor?: boolean;
+}
+
+const TABS: TabConfig[] = [
+  { id: 'todas',     label: 'Todas',           icon: 'inbox'          },
+  { id: 'mias',      label: 'Mis solicitudes',  icon: 'person'         },
+  { id: 'pendientes',label: 'Pendientes',       icon: 'schedule'       },
+  { id: 'activas',   label: 'Activas',          icon: 'autorenew'      },
+  { id: 'cerradas',  label: 'Cerradas',         icon: 'check_circle'   },
+  { id: 'asignadas', label: 'Asignadas a mí',   icon: 'assignment_ind', soloGestor: true },
+];
 
 @Component({
   selector: 'app-solicitudes-list',
@@ -25,6 +44,17 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
       </button>
     </div>
 
+    <!-- Tabs / Vistas -->
+    <div class="tabs-bar">
+      @for (tab of visibleTabs(); track tab.id) {
+        <button class="tab-btn" [class.tab-btn--active]="vista() === tab.id"
+          (click)="cambiarVista(tab.id)">
+          <mat-icon>{{ tab.icon }}</mat-icon>
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
     <!-- Filters -->
     <div class="filters-bar">
       <div class="search-wrap">
@@ -36,15 +66,6 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
         }
       </div>
 
-      <select class="filter-select" [(ngModel)]="filtroEstado" (ngModelChange)="onFiltro()">
-        <option [ngValue]="null">Todos los estados</option>
-        <option [ngValue]="1">Pendiente</option>
-        <option [ngValue]="2">En Revisión</option>
-        <option [ngValue]="3">En Desarrollo</option>
-        <option [ngValue]="4">Completada</option>
-        <option [ngValue]="5">Rechazada</option>
-      </select>
-
       <select class="filter-select" [(ngModel)]="filtroPrioridad" (ngModelChange)="onFiltro()">
         <option [ngValue]="null">Todas las prioridades</option>
         <option [ngValue]="1">Baja</option>
@@ -53,10 +74,10 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
         <option [ngValue]="4">Crítica</option>
       </select>
 
-      @if (filtroEstado || filtroPrioridad || busqueda) {
+      @if (filtroPrioridad || busqueda) {
         <button class="btn-clear-all" (click)="clearFiltros()">
           <mat-icon>filter_alt_off</mat-icon>
-          Limpiar filtros
+          Limpiar
         </button>
       }
     </div>
@@ -71,9 +92,9 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
       } @else if (solicitudes().length === 0) {
         <div class="empty-state">
           <mat-icon>inbox</mat-icon>
-          <p>No hay solicitudes que coincidan</p>
-          @if (filtroEstado || filtroPrioridad || busqueda) {
-            <button class="btn-primary" (click)="clearFiltros()">Limpiar filtros</button>
+          <p>{{ emptyMessage() }}</p>
+          @if (vista() !== 'todas' || filtroPrioridad || busqueda) {
+            <button class="btn-primary" (click)="resetVista()">Ver todas</button>
           } @else {
             <button class="btn-primary" (click)="nueva()">Crear la primera</button>
           }
@@ -85,7 +106,7 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
               <th>Título</th>
               <th>Estado</th>
               <th>Prioridad</th>
-              <th>Solicitante</th>
+              <th>Ingresado por</th>
               <th>Fecha</th>
               <th></th>
             </tr>
@@ -93,7 +114,12 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
           <tbody>
             @for (s of solicitudes(); track s.id) {
               <tr class="table-row" (click)="ver(s.id)">
-                <td class="col-titulo">{{ s.titulo }}</td>
+                <td class="col-titulo">
+                  {{ s.titulo }}
+                  @if (s.nombreSolicitante && s.nombreSolicitante !== s.usuarioCreadorNombre) {
+                    <span class="solicitante-tag">{{ s.nombreSolicitante }}</span>
+                  }
+                </td>
                 <td><span class="badge badge--estado-{{ s.estado }}">{{ estadoLabel(s) }}</span></td>
                 <td><span class="badge badge--prioridad-{{ s.prioridad }}">{{ prioridadLabel(s) }}</span></td>
                 <td class="col-muted">{{ s.usuarioCreadorNombre }}</td>
@@ -125,7 +151,7 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
     </div>
   `,
   styles: [`
-    :host { display: flex; flex-direction: column; flex: 1; padding: 32px; gap: 20px; }
+    :host { display: flex; flex-direction: column; flex: 1; padding: 32px; gap: 16px; }
 
     .page-header { display: flex; align-items: flex-start; justify-content: space-between; }
     .page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; }
@@ -141,10 +167,26 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
     .btn-primary:hover { background: #2563eb; }
     .btn-primary mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
-    /* Filters */
-    .filters-bar {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    /* Tabs */
+    .tabs-bar {
+      display: flex; gap: 4px; flex-wrap: wrap;
+      border-bottom: 1px solid #e2e8f0; padding-bottom: 0;
     }
+    .tab-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 8px 14px; border: none; background: transparent;
+      font-size: 13px; font-weight: 500; color: #64748b;
+      cursor: pointer; border-radius: 8px 8px 0 0;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, background .15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: #3b82f6; background: #f1f5f9; }
+    .tab-btn--active { color: #3b82f6; border-bottom-color: #3b82f6; background: #eff6ff; }
+    .tab-btn mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+    /* Filters */
+    .filters-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .search-wrap {
       display: flex; align-items: center; gap: 8px;
       background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
@@ -161,7 +203,6 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
       display: flex; align-items: center; padding: 0;
     }
     .clear-btn mat-icon { font-size: 16px; width: 16px; height: 16px; }
-
     .filter-select {
       border: 1px solid #e2e8f0; border-radius: 8px;
       padding: 9px 12px; font-size: 13px; color: #374151;
@@ -176,12 +217,8 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
     .btn-clear-all:hover { background: #f8fafc; }
     .btn-clear-all mat-icon { font-size: 16px; width: 16px; height: 16px; }
 
-    /* Table card */
-    .table-card {
-      background: #fff; border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
-      overflow: hidden;
-    }
+    /* Table */
+    .table-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden; }
     .table { width: 100%; border-collapse: collapse; }
     .table th {
       text-align: left; padding: 12px 16px;
@@ -196,6 +233,12 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
     .col-titulo { font-size: 14px; font-weight: 500; color: #1e293b; max-width: 300px; }
     .col-muted { font-size: 13px; color: #64748b; }
     .col-action { color: #cbd5e1; text-align: right; }
+
+    .solicitante-tag {
+      display: inline-block; margin-left: 6px;
+      background: #f0f9ff; color: #0369a1;
+      border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 500;
+    }
 
     .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
     .badge--estado-1 { background: #fff7ed; color: #c2410c; }
@@ -213,24 +256,16 @@ import { Solicitud, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS } from '../
       justify-content: center; padding: 64px; gap: 12px; color: #94a3b8;
     }
     .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; }
-    .spinner {
-      width: 32px; height: 32px; border: 3px solid #e2e8f0;
-      border-top-color: #3b82f6; border-radius: 50%;
-      animation: spin .8s linear infinite;
-    }
+    .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Pagination */
-    .pagination {
-      display: flex; align-items: center; gap: 4px;
-      padding: 12px 16px; border-top: 1px solid #f1f5f9;
-    }
+    .pagination { display: flex; align-items: center; gap: 4px; padding: 12px 16px; border-top: 1px solid #f1f5f9; }
     .page-btn {
       min-width: 32px; height: 32px; padding: 0 8px;
       border: 1px solid #e2e8f0; border-radius: 6px;
       background: #fff; cursor: pointer; font-size: 13px; color: #374151;
-      display: flex; align-items: center; justify-content: center;
-      transition: all .15s;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
     }
     .page-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; }
     .page-btn:disabled { opacity: .4; cursor: not-allowed; }
@@ -244,12 +279,14 @@ export class SolicitudesListComponent implements OnInit {
   private readonly signalr = inject(SignalRService);
   private readonly router = inject(Router);
   private readonly busqueda$ = new Subject<string>();
+  readonly auth = inject(AuthService);
 
   readonly solicitudes = signal<Solicitud[]>([]);
   readonly loading = signal(true);
   readonly total = signal(0);
   readonly page = signal(1);
   readonly pageSize = 10;
+  readonly vista = signal<Vista>('todas');
   readonly totalPages = computed(() => Math.ceil(this.total() / this.pageSize));
   readonly pageNumbers = computed(() => {
     const t = this.totalPages();
@@ -259,8 +296,21 @@ export class SolicitudesListComponent implements OnInit {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   });
 
+  readonly visibleTabs = computed(() =>
+    TABS.filter(t => !t.soloGestor || this.auth.isGestor())
+  );
+
+  readonly emptyMessage = computed(() => {
+    const v = this.vista();
+    if (v === 'mias')      return 'No tienes solicitudes creadas';
+    if (v === 'pendientes') return 'No hay solicitudes pendientes';
+    if (v === 'activas')   return 'No hay solicitudes activas';
+    if (v === 'cerradas')  return 'No hay solicitudes cerradas';
+    if (v === 'asignadas') return 'No tienes solicitudes asignadas';
+    return 'No hay solicitudes que coincidan';
+  });
+
   busqueda = '';
-  filtroEstado: number | null = null;
   filtroPrioridad: number | null = null;
 
   ngOnInit(): void {
@@ -276,12 +326,18 @@ export class SolicitudesListComponent implements OnInit {
 
   cargar(): void {
     this.loading.set(true);
+    const v = this.vista();
     this.svc.getAll({
-      estado:    this.filtroEstado ?? undefined,
-      prioridad: this.filtroPrioridad ?? undefined,
-      busqueda:  this.busqueda || undefined,
-      page:      this.page(),
-      pageSize:  this.pageSize,
+      prioridad:       this.filtroPrioridad ?? undefined,
+      busqueda:        this.busqueda || undefined,
+      page:            this.page(),
+      pageSize:        this.pageSize,
+      soloMias:        v === 'mias'      || undefined,
+      soloActivas:     v === 'activas'   || undefined,
+      soloCerradas:    v === 'cerradas'  || undefined,
+      soloAsignadaAMi: v === 'asignadas' || undefined,
+      // Para "pendientes" usamos el filtro de estado puntual
+      estado:          v === 'pendientes' ? 1 : undefined,
     }).subscribe({
       next: (r: any) => {
         const items = Array.isArray(r) ? r : (r.items ?? []);
@@ -294,18 +350,27 @@ export class SolicitudesListComponent implements OnInit {
     });
   }
 
+  cambiarVista(v: Vista): void {
+    this.vista.set(v);
+    this.page.set(1);
+    this.cargar();
+  }
+
+  resetVista(): void {
+    this.vista.set('todas');
+    this.busqueda = '';
+    this.filtroPrioridad = null;
+    this.page.set(1);
+    this.cargar();
+  }
+
   onBusqueda(value: string): void { this.busqueda$.next(value); }
   onFiltro(): void { this.page.set(1); this.cargar(); }
   goPage(p: number): void { this.page.set(p); this.cargar(); }
-
   clearBusqueda(): void { this.busqueda = ''; this.page.set(1); this.cargar(); }
-  clearFiltros(): void {
-    this.busqueda = ''; this.filtroEstado = null; this.filtroPrioridad = null;
-    this.page.set(1); this.cargar();
-  }
+  clearFiltros(): void { this.busqueda = ''; this.filtroPrioridad = null; this.page.set(1); this.cargar(); }
 
   min(a: number, b: number): number { return Math.min(a, b); }
-
   nueva(): void { this.router.navigate(['/solicitudes/nueva']); }
   ver(id: string): void { this.router.navigate(['/solicitudes', id]); }
   estadoLabel(s: Solicitud): string { return ESTADO_LABELS[s.estado] ?? ''; }
