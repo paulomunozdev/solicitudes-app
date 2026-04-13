@@ -55,7 +55,16 @@ public class GoogleAuthHandler(
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error provisionando usuario {Email}", payload.Email);
-                // No bloqueamos el login; el usuario tendrá rol Solicitante por defecto
+                // Fallback: leer rol directamente de BD para no bloquear el login
+                try
+                {
+                    using var fbScope = scopeFactory.CreateScope();
+                    var fbDb = fbScope.ServiceProvider.GetRequiredService<Infrastructure.Persistence.AppDbContext>();
+                    var fbUser = await fbDb.Usuarios.IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(u => u.Id == userId);
+                    if (fbUser is not null) { rol = fbUser.Rol; unidadNombre = fbUser.UnidadNegocioNombre; }
+                }
+                catch { }
             }
 
             var claims = new[]
@@ -103,10 +112,13 @@ public class GoogleAuthHandler(
         // Fallback: buscar por Id determinístico en caso de que ExternalId no esté seteado
         if (usuario is null)
         {
-            var byId = await db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
+            var byId = await db.Usuarios.IgnoreQueryFilters().AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (byId is not null)
             {
-                byId.ExternalId = externalId;
+                await db.Database.ExecuteSqlRawAsync(
+                    "UPDATE Usuarios SET ExternalId = {0} WHERE Id = {1}",
+                    externalId, userId);
                 usuario = byId;
             }
         }
