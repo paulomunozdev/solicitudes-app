@@ -1,6 +1,7 @@
 using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
+using Domain.Enums;
 using MediatR;
 
 namespace Application.UnidadesNegocio;
@@ -24,6 +25,9 @@ public class CrearUnidadNegocioHandler(IAppDbContext db, ICurrentUserService use
 {
     public async Task<Guid> Handle(CrearUnidadNegocioCommand cmd, CancellationToken ct)
     {
+        if (user.Rol != RolUsuario.Admin && user.Rol != RolUsuario.Gestor)
+            throw new UnauthorizedAccessException("Solo Admin o Gestor pueden crear unidades de negocio.");
+
         var unidad = new UnidadNegocio
         {
             TenantId = user.TenantId,
@@ -39,11 +43,14 @@ public class CrearUnidadNegocioHandler(IAppDbContext db, ICurrentUserService use
 
 public record ActualizarUnidadNegocioCommand(Guid Id, string Nombre, string Color, bool Activo) : IRequest;
 
-public class ActualizarUnidadNegocioHandler(IAppDbContext db)
+public class ActualizarUnidadNegocioHandler(IAppDbContext db, ICurrentUserService user)
     : IRequestHandler<ActualizarUnidadNegocioCommand>
 {
     public async Task Handle(ActualizarUnidadNegocioCommand cmd, CancellationToken ct)
     {
+        if (user.Rol != RolUsuario.Admin && user.Rol != RolUsuario.Gestor)
+            throw new UnauthorizedAccessException("Solo Admin o Gestor pueden modificar unidades de negocio.");
+
         var unidad = await db.GetUnidadNegocioByIdAsync(cmd.Id, ct)
             ?? throw new KeyNotFoundException($"Unidad de negocio {cmd.Id} no encontrada.");
         unidad.Nombre = cmd.Nombre.Trim();
@@ -56,11 +63,14 @@ public class ActualizarUnidadNegocioHandler(IAppDbContext db)
 
 public record EliminarUnidadNegocioCommand(Guid Id) : IRequest;
 
-public class EliminarUnidadNegocioHandler(IAppDbContext db)
+public class EliminarUnidadNegocioHandler(IAppDbContext db, ICurrentUserService user)
     : IRequestHandler<EliminarUnidadNegocioCommand>
 {
     public async Task Handle(EliminarUnidadNegocioCommand cmd, CancellationToken ct)
     {
+        if (user.Rol != RolUsuario.Admin && user.Rol != RolUsuario.Gestor)
+            throw new UnauthorizedAccessException("Solo Admin o Gestor pueden eliminar unidades de negocio.");
+
         var unidad = await db.GetUnidadNegocioByIdAsync(cmd.Id, ct)
             ?? throw new KeyNotFoundException($"Unidad de negocio {cmd.Id} no encontrada.");
         unidad.Activo = false;

@@ -3,7 +3,9 @@ using API;
 using API.Middleware;
 using Application.Common.Behaviors;
 using Application.Common.Interfaces;
+using AspNetCoreRateLimit;
 using Azure.Messaging.ServiceBus;
+using Domain.Enums;
 using Domain.Interfaces;
 using FluentValidation;
 using Infrastructure.Identity;
@@ -24,9 +26,7 @@ var azureTenantId = builder.Configuration["AzureAd:TenantId"]!;
 var azureClientId = builder.Configuration["AzureAd:ClientId"]!;
 
 builder.Services.AddAuthentication()
-    // Esquema Google: valida JWT de Google Identity Services
     .AddScheme<AuthenticationSchemeOptions, GoogleAuthHandler>("Google", _ => { })
-    // Esquema Azure AD: valida JWT de Microsoft Entra ID
     .AddJwtBearer("AzureAd", options =>
     {
         options.Authority    = $"https://login.microsoftonline.com/{azureTenantId}/v2.0";
@@ -51,14 +51,26 @@ builder.Services.AddAuthentication()
         };
     });
 
-// Política combinada: acepta cualquiera de los dos esquemas
+// ── Autorización: política base + política AdminOGestor ────────
 builder.Services.AddAuthorization(options =>
 {
+    // Política base: acepta cualquiera de los dos esquemas
     var combinedPolicy = new AuthorizationPolicyBuilder("Google", "AzureAd")
         .RequireAuthenticatedUser()
         .Build();
     options.DefaultPolicy  = combinedPolicy;
     options.FallbackPolicy = combinedPolicy;
+
+    // Política de acceso restringido a Admin y Gestor
+    options.AddPolicy("AdminOGestor", policy =>
+        policy.RequireAuthenticatedUser()
+              .AddAuthenticationSchemes("Google", "AzureAd")
+              .RequireAssertion(ctx =>
+              {
+                  var rolClaim = ctx.User.FindFirst("rol")?.Value;
+                  if (!int.TryParse(rolClaim, out var rolVal)) return false;
+                  return rolVal >= (int)RolUsuario.Gestor; // Gestor=2, Admin=3
+              }));
 });
 
 // ── Base de datos ──────────────────────────────────────────────
@@ -98,12 +110,29 @@ else
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
 
-// ── CORS (Angular dev) ─────────────────────────────────────────
+// ── Rate Limiting (protección contra brute force / enumeración) ─
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(options =>
+{
+    options.EnableEndpointRateLimiting = true;
+    options.StackBlockedRequests       = false;
+    options.RealIpHeader               = "X-Real-IP";
+    options.ClientIdHeader             = "X-ClientId";
+    options.GeneralRules = new List<RateLimitRule>
+    {
+        new() { Endpoint = "*", Period = "1m",  Limit = 120 },  // 120 req/min global
+        new() { Endpoint = "post:/api/usuarios/me", Period = "1m", Limit = 10 }, // login
+    };
+});
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
+// ── CORS (Angular dev + producción) ───────────────────────────
 builder.Services.AddCors(options =>
     options.AddPolicy("Angular", policy =>
         policy.WithOrigins("http://localhost:4200", "https://witty-meadow-05cecf60f.7.azurestaticapps.net")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+              .WithHeaders("Authorization", "Content-Type", "X-ClientId")
               .AllowCredentials()));
 
 // ── Swagger ────────────────────────────────────────────────────
@@ -128,20 +157,33 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// ── Security headers ──────────────────────────────────────────
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    context.Response.Headers["X-Frame-Options"]           = "DENY";
+    context.Response.Headers["X-Content-Type-Options"]    = "nosniff";
+    context.Response.Headers["Referrer-Policy"]           = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"]        = "geolocation=(), microphone=(), camera=()";
+    await next();
+});
+
 // ── Middleware pipeline ────────────────────────────────────────
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// Swagger solo en Development
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
+app.UseIpRateLimiting();
 app.UseHttpsRedirection();
 app.UseCors("Angular");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<Infrastructure.Realtime.SolicitudesHub>("/hubs/solicitudes");
-
-// ── Diagnóstico temporal ───────────────────────────────────────
-app.MapGet("/api/diag/version", () => Results.Ok(new { build = "2026-04-13-v5", auth = "Google+AzureAd", controllers = new[] { "Solicitudes", "Usuarios", "Categorias", "UnidadesNegocio" } })).AllowAnonymous();
 
 app.Run();

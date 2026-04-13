@@ -1,13 +1,30 @@
 using Domain.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
 
 namespace Infrastructure.Realtime;
 
-/// <summary>Hub vacío en Infrastructure para evitar dependencia circular con API.</summary>
+/// <summary>
+/// Hub de tiempo real para notificaciones de solicitudes.
+/// Está en Infrastructure para que SignalRNotifier pueda inyectar IHubContext sin dependencia circular con API.
+/// </summary>
+[Authorize]
 public class SolicitudesHub : Hub
 {
-    public async Task UnirseATenant(string tenantId) =>
+    /// <summary>
+    /// El cliente se une al grupo de su tenant.
+    /// Se valida que el tenantId solicitado coincida con el claim del token.
+    /// </summary>
+    public async Task UnirseATenant(string tenantId)
+    {
+        var userTenantId = Context.User?.FindFirst("tenantId")?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId) || userTenantId != tenantId)
+            throw new HubException("No tienes permiso para suscribirte a este tenant.");
+
         await Groups.AddToGroupAsync(Context.ConnectionId, $"tenant-{tenantId}");
+    }
 }
 
 public class SignalRNotifier(IHubContext<SolicitudesHub> hub) : IRealtimeNotifier

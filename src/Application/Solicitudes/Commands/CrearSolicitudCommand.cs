@@ -31,8 +31,12 @@ public class CrearSolicitudValidator : AbstractValidator<CrearSolicitudCommand>
             .MaximumLength(5000).WithMessage("La descripción no puede superar 5000 caracteres.");
 
         RuleFor(x => x.FechaLimite)
-            .GreaterThan(DateTime.UtcNow).When(x => x.FechaLimite.HasValue)
-            .WithMessage("La fecha límite debe ser futura.");
+            .GreaterThan(DateTime.UtcNow)
+            .When(x => x.FechaLimite.HasValue)
+            .WithMessage("La fecha límite debe ser futura.")
+            .LessThanOrEqualTo(DateTime.UtcNow.AddYears(5))
+            .When(x => x.FechaLimite.HasValue)
+            .WithMessage("La fecha límite no puede superar 5 años desde hoy.");
     }
 }
 

@@ -65,7 +65,7 @@ export class AuthService {
 
   /** 'google' | 'azure' | null */
   readonly loginType = signal<'google' | 'azure' | null>(
-    localStorage.getItem(this.LOGIN_TYPE_KEY) as 'google' | 'azure' | null
+    (sessionStorage.getItem(this.LOGIN_TYPE_KEY) ?? localStorage.getItem(this.LOGIN_TYPE_KEY)) as 'google' | 'azure' | null
   );
 
   readonly user    = signal<GoogleUser | null>(this.loadStoredGoogleUser());
@@ -128,8 +128,9 @@ export class AuthService {
       picture: payload.picture,
       credential,
     };
-    localStorage.setItem(this.GOOGLE_KEY, JSON.stringify(user));
-    localStorage.setItem(this.LOGIN_TYPE_KEY, 'google');
+    // sessionStorage: el token se elimina al cerrar el tab (menor exposición a XSS persistente)
+    sessionStorage.setItem(this.GOOGLE_KEY, JSON.stringify(user));
+    sessionStorage.setItem(this.LOGIN_TYPE_KEY, 'google');
     this.loginType.set('google');
     this.user.set(user);
     this.fetchProfile();
@@ -143,7 +144,7 @@ export class AuthService {
     });
     if (result?.account) {
       app.setActiveAccount(result.account);
-      localStorage.setItem(this.LOGIN_TYPE_KEY, 'azure');
+      sessionStorage.setItem(this.LOGIN_TYPE_KEY, 'azure');
       this.loginType.set('azure');
       this.user.set(null);
       this.fetchProfile();
@@ -191,7 +192,7 @@ export class AuthService {
   fetchProfile(): void {
     this.http.get<UserProfile>(`${environment.apiUrl}/usuarios/me`).subscribe({
       next: profile => {
-        localStorage.setItem(this.PROFILE_KEY, JSON.stringify(profile));
+        sessionStorage.setItem(this.PROFILE_KEY, JSON.stringify(profile));
         this.profile.set(profile);
       },
       error: () => {},
@@ -202,9 +203,9 @@ export class AuthService {
   logout(): void {
     const type = this.loginType();
 
-    localStorage.removeItem(this.GOOGLE_KEY);
-    localStorage.removeItem(this.PROFILE_KEY);
-    localStorage.removeItem(this.LOGIN_TYPE_KEY);
+    sessionStorage.removeItem(this.GOOGLE_KEY);
+    sessionStorage.removeItem(this.PROFILE_KEY);
+    sessionStorage.removeItem(this.LOGIN_TYPE_KEY);
     this.user.set(null);
     this.profile.set(null);
     this.loginType.set(null);
@@ -260,15 +261,15 @@ export class AuthService {
   }
 
   private loadStoredGoogleUser(): GoogleUser | null {
-    if (localStorage.getItem(this.LOGIN_TYPE_KEY) !== 'google') return null;
+    if (sessionStorage.getItem(this.LOGIN_TYPE_KEY) !== 'google') return null;
     try {
-      const stored = localStorage.getItem(this.GOOGLE_KEY);
+      const stored = sessionStorage.getItem(this.GOOGLE_KEY);
       if (!stored) return null;
       const user: GoogleUser = JSON.parse(stored);
       if (!this.isGoogleTokenValid(user.credential)) {
-        localStorage.removeItem(this.GOOGLE_KEY);
-        localStorage.removeItem(this.PROFILE_KEY);
-        localStorage.removeItem(this.LOGIN_TYPE_KEY);
+        sessionStorage.removeItem(this.GOOGLE_KEY);
+        sessionStorage.removeItem(this.PROFILE_KEY);
+        sessionStorage.removeItem(this.LOGIN_TYPE_KEY);
         return null;
       }
       return user;
@@ -279,7 +280,7 @@ export class AuthService {
 
   private loadStoredProfile(): UserProfile | null {
     try {
-      const stored = localStorage.getItem(this.PROFILE_KEY);
+      const stored = sessionStorage.getItem(this.PROFILE_KEY);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
