@@ -100,6 +100,17 @@ public class GoogleAuthHandler(
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.ExternalId == externalId);
 
+        // Fallback: buscar por Id determinístico en caso de que ExternalId no esté seteado
+        if (usuario is null)
+        {
+            var byId = await db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
+            if (byId is not null)
+            {
+                byId.ExternalId = externalId;
+                usuario = byId;
+            }
+        }
+
         if (usuario is null)
         {
             // Primer usuario del tenant → Admin; resto → Solicitante
