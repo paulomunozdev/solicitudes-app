@@ -105,5 +105,6 @@ app.MapHub<Infrastructure.Realtime.SolicitudesHub>("/hubs/solicitudes");
 
 // ── Diagnóstico temporal ───────────────────────────────────────
 app.MapGet("/api/diag/version", () => Results.Ok(new { build = "2026-04-13-v3", controllers = new[] { "Solicitudes", "Usuarios", "Categorias", "UnidadesNegocio" } })).AllowAnonymous();
+app.MapGet("/api/diag/claims", (Application.Common.Interfaces.ICurrentUserService cu) => Results.Ok(new { userId = cu.UserId, tenantId = cu.TenantId, rol = cu.Rol.ToString(), email = cu.Email })).RequireAuthorization();
 
 app.Run();
