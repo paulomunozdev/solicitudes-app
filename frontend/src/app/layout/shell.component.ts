@@ -46,14 +46,14 @@ import { AuthService } from '../core/services/auth.service';
         </nav>
 
         <div class="sidebar__user">
-          @if (auth.user()?.picture) {
-            <img class="sidebar__avatar sidebar__avatar--img" [src]="auth.user()!.picture" [alt]="auth.user()!.name" />
+          @if (auth.displayPicture()) {
+            <img class="sidebar__avatar sidebar__avatar--img" [src]="auth.displayPicture()!" [alt]="auth.displayName()" />
           } @else {
-            <div class="sidebar__avatar">{{ auth.user()?.name?.[0] ?? '?' }}</div>
+            <div class="sidebar__avatar">{{ auth.displayName()[0] || '?' }}</div>
           }
           <div class="sidebar__user-info">
-            <p class="sidebar__user-name">{{ auth.user()?.name ?? 'Usuario' }}</p>
-            <p class="sidebar__user-email">{{ auth.user()?.email ?? '' }}</p>
+            <p class="sidebar__user-name">{{ auth.displayName() || 'Usuario' }}</p>
+            <p class="sidebar__user-email">{{ auth.displayEmail() }}</p>
           </div>
           <button class="sidebar__logout" (click)="logout()" title="Cerrar sesión">
             <mat-icon>logout</mat-icon>

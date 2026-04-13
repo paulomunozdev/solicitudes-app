@@ -12,16 +12,54 @@ using Infrastructure.Persistence.Repositories;
 using Infrastructure.Realtime;
 using Infrastructure.ServiceBus;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Autenticación Google Identity Services ─────────────────────
-builder.Services.AddAuthentication("Google")
-    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, GoogleAuthHandler>(
-        "Google", _ => { });
-builder.Services.AddAuthorization();
+// ── Autenticación dual: Google + Azure AD ─────────────────────
+var azureTenantId = builder.Configuration["AzureAd:TenantId"]!;
+var azureClientId = builder.Configuration["AzureAd:ClientId"]!;
+
+builder.Services.AddAuthentication()
+    // Esquema Google: valida JWT de Google Identity Services
+    .AddScheme<AuthenticationSchemeOptions, GoogleAuthHandler>("Google", _ => { })
+    // Esquema Azure AD: valida JWT de Microsoft Entra ID
+    .AddJwtBearer("AzureAd", options =>
+    {
+        options.Authority    = $"https://login.microsoftonline.com/{azureTenantId}/v2.0";
+        options.Audience     = $"api://{azureClientId}";
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidAudiences  = [$"api://{azureClientId}", azureClientId],
+            ValidIssuer     = $"https://login.microsoftonline.com/{azureTenantId}/v2.0",
+            NameClaimType   = "name",
+        };
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                var enricher = new AzureAdClaimsTransformer(
+                    ctx.HttpContext.RequestServices.GetRequiredService<IServiceScopeFactory>(),
+                    ctx.HttpContext.RequestServices.GetRequiredService<ILogger<AzureAdClaimsTransformer>>(),
+                    ctx.HttpContext.RequestServices.GetRequiredService<IConfiguration>());
+                await enricher.EnrichAsync(ctx.Principal!);
+            }
+        };
+    });
+
+// Política combinada: acepta cualquiera de los dos esquemas
+builder.Services.AddAuthorization(options =>
+{
+    var combinedPolicy = new AuthorizationPolicyBuilder("Google", "AzureAd")
+        .RequireAuthenticatedUser()
+        .Build();
+    options.DefaultPolicy  = combinedPolicy;
+    options.FallbackPolicy = combinedPolicy;
+});
 
 // ── Base de datos ──────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(opt =>
@@ -104,6 +142,6 @@ app.MapControllers();
 app.MapHub<Infrastructure.Realtime.SolicitudesHub>("/hubs/solicitudes");
 
 // ── Diagnóstico temporal ───────────────────────────────────────
-app.MapGet("/api/diag/version", () => Results.Ok(new { build = "2026-04-13-v4", controllers = new[] { "Solicitudes", "Usuarios", "Categorias", "UnidadesNegocio" } })).AllowAnonymous();
+app.MapGet("/api/diag/version", () => Results.Ok(new { build = "2026-04-13-v5", auth = "Google+AzureAd", controllers = new[] { "Solicitudes", "Usuarios", "Categorias", "UnidadesNegocio" } })).AllowAnonymous();
 
 app.Run();

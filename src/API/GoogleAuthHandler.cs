@@ -1,144 +1,109 @@
-using Domain.Entities;
-using Domain.Enums;
 using Google.Apis.Auth;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 
 namespace API;
 
 /// <summary>
-/// Valida Google ID Tokens, provisiona Tenant/Usuario si es la primera vez,
-/// y agrega claims de rol y unidad de negocio.
+/// Esquema de autenticación personalizado para tokens Google Identity Services (JWT).
+/// Valida el credential, provisiona usuario/tenant en el tenant fijo de la app,
+/// y agrega claims unificados (userId, tenantId, rol, unidadNegocio).
 /// </summary>
 public class GoogleAuthHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
-    ILoggerFactory logger,
+    ILoggerFactory loggerFactory,
     UrlEncoder encoder,
     IConfiguration configuration,
     IServiceScopeFactory scopeFactory)
-    : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    : AuthenticationHandler<AuthenticationSchemeOptions>(options, loggerFactory, encoder)
 {
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var authHeader = Request.Headers.Authorization.ToString();
         if (!authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            return AuthenticateResult.Fail("No Bearer token");
+            return AuthenticateResult.NoResult();
 
-        var idToken = authHeader["Bearer ".Length..].Trim();
+        var token = authHeader["Bearer ".Length..].Trim();
 
+        GoogleJsonWebSignature.Payload payload;
         try
         {
-            var clientId = configuration["Google:ClientId"]!;
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken,
-                new GoogleJsonWebSignature.ValidationSettings { Audience = [clientId] });
-
-            var userId   = DeterministicGuid(payload.Subject);
-            var domain   = payload.Email.Split('@').Last().ToLowerInvariant();
-            var tenantId = DeterministicGuid(domain);
-
-            // Provisionar tenant y usuario en BD
-            var rol             = RolUsuario.Solicitante;
-            string? unidadNombre = null;
-
-            try
-            {
-                (rol, unidadNombre) = await ProvisionAsync(
-                    userId, tenantId, domain,
-                    payload.Subject, payload.Email, payload.Name, payload.Picture);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error provisionando usuario {Email}", payload.Email);
-                // Fallback: leer rol directamente de BD para no bloquear el login
-                try
+            var googleClientId = configuration["Google:ClientId"]!;
+            payload = await GoogleJsonWebSignature.ValidateAsync(token,
+                new GoogleJsonWebSignature.ValidationSettings
                 {
-                    using var fbScope = scopeFactory.CreateScope();
-                    var fbDb = fbScope.ServiceProvider.GetRequiredService<Infrastructure.Persistence.AppDbContext>();
-                    var fbUser = await fbDb.Usuarios.IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(u => u.Id == userId);
-                    if (fbUser is not null) { rol = fbUser.Rol; unidadNombre = fbUser.UnidadNegocioNombre; }
-                }
-                catch { }
-            }
-
-            var claims = new[]
-            {
-                new Claim("userId",         userId.ToString()),
-                new Claim("tenantId",       tenantId.ToString()),
-                new Claim(ClaimTypes.Email, payload.Email),
-                new Claim(ClaimTypes.Name,  payload.Name),
-                new Claim("picture",        payload.Picture ?? string.Empty),
-                new Claim("rol",            ((int)rol).ToString()),
-                new Claim("unidadNegocio",  unidadNombre ?? string.Empty),
-            };
-
-            var identity = new ClaimsIdentity(claims, "Google");
-            return AuthenticateResult.Success(
-                new AuthenticationTicket(new ClaimsPrincipal(identity), "Google"));
+                    Audience = [googleClientId],
+                });
         }
-        catch (Exception ex)
+        catch
         {
-            return AuthenticateResult.Fail($"Invalid Google token: {ex.Message}");
+            return AuthenticateResult.NoResult(); // No es un token de Google válido
         }
+
+        // ID de usuario deterministico a partir del sub de Google (backwards compat)
+        var userId   = DeterministicGuid(payload.Subject);
+        // Tenant fijo de la aplicación (single-tenant)
+        var tenantId = Guid.Parse(configuration["App:TenantId"]!);
+
+        var email  = payload.Email ?? string.Empty;
+        var nombre = payload.Name  ?? email;
+
+        var (rol, unidadNombre) = await ProvisionAsync(userId, tenantId, payload.Subject, email, nombre);
+
+        var claims = new[]
+        {
+            new Claim("userId",         userId.ToString()),
+            new Claim("tenantId",       tenantId.ToString()),
+            new Claim(ClaimTypes.Email, email),
+            new Claim(ClaimTypes.Name,  nombre),
+            new Claim("rol",            ((int)rol).ToString()),
+            new Claim("unidadNegocio",  unidadNombre ?? string.Empty),
+        };
+
+        var identity  = new ClaimsIdentity(claims, Scheme.Name);
+        var principal = new ClaimsPrincipal(identity);
+        var ticket    = new AuthenticationTicket(principal, Scheme.Name);
+
+        return AuthenticateResult.Success(ticket);
     }
 
-    private async Task<(RolUsuario Rol, string? UnidadNombre)> ProvisionAsync(
-        Guid userId, Guid tenantId, string domain,
-        string externalId, string email, string nombre, string? foto)
+    private async Task<(Domain.Enums.RolUsuario Rol, string? UnidadNombre)> ProvisionAsync(
+        Guid userId, Guid tenantId, string googleSub, string email, string nombre)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // ── Upsert Tenant ────────────────────────────────────────────
+        // ── Upsert Tenant ────────────────────────────────────────
         var tenant = await db.Tenants.FindAsync(tenantId);
         if (tenant is null)
         {
-            tenant = new Tenant { Id = tenantId, Nombre = domain, Plan = "Basic", Activo = true };
+            var domain = email.Split('@').LastOrDefault()?.ToLowerInvariant() ?? "app";
+            tenant = new Domain.Entities.Tenant { Id = tenantId, Nombre = domain, Plan = "Basic", Activo = true };
             db.Tenants.Add(tenant);
             await db.SaveChangesAsync();
         }
 
-        // ── Upsert Usuario ───────────────────────────────────────────
-        var usuario = await db.Usuarios
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.ExternalId == externalId);
-
-        // Fallback: buscar por Id determinístico en caso de que ExternalId no esté seteado
-        if (usuario is null)
-        {
-            var byId = await db.Usuarios.IgnoreQueryFilters().AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == userId);
-            if (byId is not null)
-            {
-                await db.Database.ExecuteSqlRawAsync(
-                    "UPDATE Usuarios SET ExternalId = {0} WHERE Id = {1}",
-                    externalId, userId);
-                usuario = byId;
-            }
-        }
+        // ── Upsert Usuario ───────────────────────────────────────
+        var usuario = await db.Usuarios.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (usuario is null)
         {
-            // Primer usuario del tenant → Admin; resto → Solicitante
-            var esAdmin = !await db.Usuarios
-                .IgnoreQueryFilters()
+            var esAdmin = !await db.Usuarios.IgnoreQueryFilters()
                 .AnyAsync(u => u.TenantId == tenantId);
 
-            usuario = new Usuario
+            usuario = new Domain.Entities.Usuario
             {
                 Id           = userId,
                 TenantId     = tenantId,
-                ExternalId   = externalId,
+                ExternalId   = googleSub,
                 Email        = email,
                 Nombre       = nombre,
-                Foto         = foto,
-                Rol          = esAdmin ? RolUsuario.Admin : RolUsuario.Solicitante,
+                Rol          = esAdmin ? Domain.Enums.RolUsuario.Admin : Domain.Enums.RolUsuario.Solicitante,
                 Activo       = true,
                 UltimoAcceso = DateTime.UtcNow,
             };
@@ -147,7 +112,6 @@ public class GoogleAuthHandler(
         else
         {
             usuario.Nombre       = nombre;
-            usuario.Foto         = foto;
             usuario.UltimoAcceso = DateTime.UtcNow;
             db.Usuarios.Update(usuario);
         }
@@ -156,10 +120,13 @@ public class GoogleAuthHandler(
         return (usuario.Rol, usuario.UnidadNegocioNombre);
     }
 
-    /// <summary>Genera un Guid determinístico a partir de un string usando SHA-256.</summary>
+    /// <summary>
+    /// Genera un GUID deterministico a partir del sub de Google (compatible con versiones anteriores).
+    /// </summary>
     private static Guid DeterministicGuid(string input)
     {
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-        return new Guid(hash[..16]);
+        using var md5 = System.Security.Cryptography.MD5.Create();
+        var hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+        return new Guid(hash);
     }
 }
