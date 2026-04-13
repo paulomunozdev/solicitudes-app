@@ -13,6 +13,10 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class UsuariosController(AppDbContext db, ICurrentUserService currentUser) : ControllerBase
 {
+    [AllowAnonymous]
+    [HttpGet("ping")]
+    public IActionResult Ping() => Ok("pong");
+
     /// <summary>Perfil del usuario autenticado. Auto-provisiona si no existe en BD.</summary>
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
