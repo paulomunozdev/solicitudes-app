@@ -13,7 +13,7 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class UsuariosController(AppDbContext db, ICurrentUserService currentUser) : ControllerBase
 {
-    /// <summary>Perfil del usuario autenticado.</summary>
+    /// <summary>Perfil del usuario autenticado. Auto-provisiona si no existe en BD.</summary>
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
@@ -21,7 +21,43 @@ public class UsuariosController(AppDbContext db, ICurrentUserService currentUser
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.Id == currentUser.UserId, ct);
 
-        if (usuario is null) return NotFound();
+        if (usuario is null)
+        {
+            // Garantizar que el tenant existe antes de insertar el usuario
+            var tenant = await db.Tenants.FindAsync([currentUser.TenantId], ct);
+            if (tenant is null)
+            {
+                var domain = currentUser.Email.Split('@').Last().ToLowerInvariant();
+                tenant = new Domain.Entities.Tenant
+                {
+                    Id = currentUser.TenantId,
+                    Nombre = domain,
+                    Plan = "Basic",
+                    Activo = true
+                };
+                db.Tenants.Add(tenant);
+                await db.SaveChangesAsync(ct);
+            }
+
+            // Primer usuario del tenant → Admin
+            var esAdmin = !await db.Usuarios
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.TenantId == currentUser.TenantId, ct);
+
+            usuario = new Domain.Entities.Usuario
+            {
+                Id           = currentUser.UserId,
+                TenantId     = currentUser.TenantId,
+                ExternalId   = string.Empty,
+                Email        = currentUser.Email,
+                Nombre       = currentUser.UserName,
+                Rol          = esAdmin ? RolUsuario.Admin : RolUsuario.Solicitante,
+                Activo       = true,
+                UltimoAcceso = DateTime.UtcNow,
+            };
+            db.Usuarios.Add(usuario);
+            await db.SaveChangesAsync(ct);
+        }
 
         return Ok(new UsuarioDto(
             usuario.Id, usuario.Nombre, usuario.Email, usuario.Foto,
