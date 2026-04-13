@@ -69,17 +69,21 @@ public class UsuariosController(AppDbContext db, ICurrentUserService currentUser
             usuario.UnidadNegocioNombre, usuario.Activo, usuario.UltimoAcceso));
     }
 
-    /// <summary>Lista todos los usuarios del tenant (solo Admin).</summary>
+    /// <summary>Lista usuarios del tenant. Admin ve todos; Gestor puede filtrar por BU.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken ct)
+    public async Task<IActionResult> GetAll([FromQuery] string? bu, CancellationToken ct)
     {
-        if (currentUser.Rol != RolUsuario.Admin) return Forbid();
+        if (currentUser.Rol != RolUsuario.Admin && currentUser.Rol != RolUsuario.Gestor)
+            return Forbid();
 
-        var usuarios = await db.Usuarios
+        var query = db.Usuarios
             .IgnoreQueryFilters()
-            .Where(u => u.TenantId == currentUser.TenantId)
-            .OrderBy(u => u.Nombre)
-            .ToListAsync(ct);
+            .Where(u => u.TenantId == currentUser.TenantId);
+
+        if (!string.IsNullOrWhiteSpace(bu))
+            query = query.Where(u => u.UnidadNegocioNombre == bu);
+
+        var usuarios = await query.OrderBy(u => u.Nombre).ToListAsync(ct);
 
         var dtos = usuarios.Select(u => new UsuarioDto(
             u.Id, u.Nombre, u.Email, u.Foto,

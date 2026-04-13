@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Subscription } from 'rxjs';
 import { SolicitudesService } from '../../../core/services/solicitudes.service';
 import { SignalRService } from '../../../core/services/signalr.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   Solicitud, Comentario, EstadoSolicitud, ESTADO_LABELS, PRIORIDAD_LABELS
 } from '../../../core/models/solicitud.model';
@@ -50,22 +51,57 @@ import {
             <p class="solicitud-desc">{{ s.descripcion }}</p>
           </div>
 
-          <!-- Cambiar estado -->
-          <div class="card">
-            <h3 class="card-title">Cambiar estado</h3>
-            <div class="estado-form">
-              <select class="field-select" [(ngModel)]="nuevoEstado">
-                @for (e of estados; track e.value) {
-                  <option [ngValue]="e.value">{{ e.label }}</option>
+          <!-- Acciones de progresión (solo Gestor / Admin) -->
+          @if (auth.isGestor()) {
+            <div class="card">
+              <h3 class="card-title">Acciones</h3>
+              @switch (s.estado) {
+                @case (EstadoSolicitud.Pendiente) {
+                  <div class="accion-buttons">
+                    <button class="btn-accion btn-accion--primary" [disabled]="guardando()"
+                      (click)="avanzar(s.id, EstadoSolicitud.EnRevision)">
+                      @if (guardando()) { <span class="btn-spinner"></span> } @else { <mat-icon>manage_search</mat-icon> }
+                      Tomar en revisión
+                    </button>
+                  </div>
                 }
-              </select>
-              <button class="btn-primary"
-                [disabled]="nuevoEstado === s.estado || guardando()"
-                (click)="cambiarEstado(s.id)">
-                @if (guardando()) { <span class="btn-spinner"></span> } @else { Actualizar }
-              </button>
+                @case (EstadoSolicitud.EnRevision) {
+                  <div class="accion-buttons">
+                    <button class="btn-accion btn-accion--primary" [disabled]="guardando()"
+                      (click)="avanzar(s.id, EstadoSolicitud.EnDesarrollo)">
+                      @if (guardando()) { <span class="btn-spinner"></span> } @else { <mat-icon>code</mat-icon> }
+                      Iniciar desarrollo
+                    </button>
+                    <button class="btn-accion btn-accion--danger" [disabled]="guardando()"
+                      (click)="avanzar(s.id, EstadoSolicitud.Rechazada)">
+                      @if (guardando()) { <span class="btn-spinner"></span> } @else { <mat-icon>cancel</mat-icon> }
+                      Rechazar
+                    </button>
+                  </div>
+                }
+                @case (EstadoSolicitud.EnDesarrollo) {
+                  <div class="accion-buttons">
+                    <button class="btn-accion btn-accion--success" [disabled]="guardando()"
+                      (click)="avanzar(s.id, EstadoSolicitud.Completada)">
+                      @if (guardando()) { <span class="btn-spinner"></span> } @else { <mat-icon>check_circle</mat-icon> }
+                      Completar
+                    </button>
+                    <button class="btn-accion btn-accion--danger" [disabled]="guardando()"
+                      (click)="avanzar(s.id, EstadoSolicitud.Rechazada)">
+                      @if (guardando()) { <span class="btn-spinner"></span> } @else { <mat-icon>cancel</mat-icon> }
+                      Rechazar
+                    </button>
+                  </div>
+                }
+                @default {
+                  <p class="estado-cerrado">
+                    <mat-icon>{{ s.estado === EstadoSolicitud.Completada ? 'check_circle' : 'block' }}</mat-icon>
+                    Esta solicitud está {{ s.estado === EstadoSolicitud.Completada ? 'completada' : 'rechazada' }}.
+                  </p>
+                }
+              }
             </div>
-          </div>
+          }
 
           <!-- Comentarios -->
           <div class="card">
@@ -125,7 +161,7 @@ import {
               </div>
               @if (s.nombreSolicitante && s.nombreSolicitante !== s.usuarioCreadorNombre) {
                 <div class="meta-item">
-                  <p class="meta-key">Solicitante</p>
+                  <p class="meta-key">Solicitado por</p>
                   <p class="meta-val">{{ s.nombreSolicitante }}</p>
                 </div>
               }
@@ -198,12 +234,32 @@ import {
     .badge-realtime mat-icon { font-size: 14px; width: 14px; height: 14px; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
-    .estado-form { display: flex; gap: 12px; align-items: center; }
-    .field-select {
-      flex: 1; border: 1px solid #e2e8f0; border-radius: 8px;
-      padding: 9px 12px; font-size: 14px; color: #1e293b;
-      outline: none; background: #fff; font-family: inherit; cursor: pointer;
+    /* Acciones de progresión */
+    .accion-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn-accion {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: none; border-radius: 8px;
+      padding: 10px 18px; font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: background .15s, opacity .15s;
     }
+    .btn-accion:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-accion mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+    .btn-accion--primary { background: #3b82f6; color: #fff; }
+    .btn-accion--primary:hover:not(:disabled) { background: #2563eb; }
+
+    .btn-accion--success { background: #16a34a; color: #fff; }
+    .btn-accion--success:hover:not(:disabled) { background: #15803d; }
+
+    .btn-accion--danger { background: #fff; color: #dc2626; border: 1px solid #fca5a5; }
+    .btn-accion--danger:hover:not(:disabled) { background: #fef2f2; }
+
+    .estado-cerrado {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #64748b; margin: 0;
+    }
+    .estado-cerrado mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
     /* Comentarios */
     .comentarios-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
@@ -282,6 +338,11 @@ export class SolicitudesDetailComponent implements OnInit, OnDestroy {
   private readonly signalr = inject(SignalRService);
   private sub?: Subscription;
 
+  readonly auth = inject(AuthService);
+
+  // Exponer el enum al template
+  readonly EstadoSolicitud = EstadoSolicitud;
+
   readonly solicitud = signal<Solicitud | null>(null);
   readonly comentarios = signal<Comentario[]>([]);
   readonly loading = signal(true);
@@ -289,13 +350,8 @@ export class SolicitudesDetailComponent implements OnInit, OnDestroy {
   readonly enviando = signal(false);
   readonly estadoActualizado = signal(false);
 
-  nuevoEstado: EstadoSolicitud = EstadoSolicitud.Pendiente;
   nuevoTexto = '';
   esInterno = false;
-
-  readonly estados = Object.entries(ESTADO_LABELS).map(([value, label]) => ({
-    value: Number(value) as EstadoSolicitud, label,
-  }));
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -321,7 +377,6 @@ export class SolicitudesDetailComponent implements OnInit, OnDestroy {
   cargar(id: string): void {
     this.svc.getById(id).subscribe(s => {
       this.solicitud.set(s);
-      this.nuevoEstado = s.estado;
       this.loading.set(false);
     });
   }
@@ -330,9 +385,9 @@ export class SolicitudesDetailComponent implements OnInit, OnDestroy {
     this.svc.getComentarios(id).subscribe(c => this.comentarios.set(c));
   }
 
-  cambiarEstado(id: string): void {
+  avanzar(id: string, estado: EstadoSolicitud): void {
     this.guardando.set(true);
-    this.svc.cambiarEstado(id, Number(this.nuevoEstado) as EstadoSolicitud).subscribe({
+    this.svc.cambiarEstado(id, estado).subscribe({
       next: () => { this.cargar(id); this.guardando.set(false); },
       error: () => this.guardando.set(false),
     });
