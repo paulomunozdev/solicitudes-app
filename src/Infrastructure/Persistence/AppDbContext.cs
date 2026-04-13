@@ -56,6 +56,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
             e.Property(x => x.Email).IsRequired().HasMaxLength(256);
             e.Property(x => x.Nombre).IsRequired().HasMaxLength(200);
             e.Property(x => x.ExternalId).HasMaxLength(256);
+            e.Property(x => x.Foto).HasMaxLength(500);
+            e.Property(x => x.UnidadNegocioNombre).HasMaxLength(100);
             e.HasOne(x => x.Tenant).WithMany(t => t.Usuarios).HasForeignKey(x => x.TenantId);
         });
 

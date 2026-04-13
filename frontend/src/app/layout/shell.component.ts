@@ -22,22 +22,27 @@ import { AuthService } from '../core/services/auth.service';
             <mat-icon>inbox</mat-icon>
             <span>Solicitudes</span>
           </a>
-          <a class="sidebar__item" routerLink="/dashboard" routerLinkActive="sidebar__item--active">
-            <mat-icon>bar_chart</mat-icon>
-            <span>Dashboard</span>
-          </a>
-          <a class="sidebar__item sidebar__item--disabled">
-            <mat-icon>group</mat-icon>
-            <span>Usuarios</span>
-          </a>
-          <a class="sidebar__item" routerLink="/admin/categorias" routerLinkActive="sidebar__item--active">
-            <mat-icon>label</mat-icon>
-            <span>Categorías</span>
-          </a>
-          <a class="sidebar__item" routerLink="/admin/unidades-negocio" routerLinkActive="sidebar__item--active">
-            <mat-icon>corporate_fare</mat-icon>
-            <span>Unidades</span>
-          </a>
+          @if (auth.isGestor()) {
+            <a class="sidebar__item" routerLink="/dashboard" routerLinkActive="sidebar__item--active">
+              <mat-icon>bar_chart</mat-icon>
+              <span>Dashboard</span>
+            </a>
+          }
+          @if (auth.isAdmin()) {
+            <div class="sidebar__section">Admin</div>
+            <a class="sidebar__item" routerLink="/admin/usuarios" routerLinkActive="sidebar__item--active">
+              <mat-icon>group</mat-icon>
+              <span>Usuarios</span>
+            </a>
+            <a class="sidebar__item" routerLink="/admin/categorias" routerLinkActive="sidebar__item--active">
+              <mat-icon>label</mat-icon>
+              <span>Categorías</span>
+            </a>
+            <a class="sidebar__item" routerLink="/admin/unidades-negocio" routerLinkActive="sidebar__item--active">
+              <mat-icon>corporate_fare</mat-icon>
+              <span>Unidades</span>
+            </a>
+          }
         </nav>
 
         <div class="sidebar__user">
@@ -58,7 +63,19 @@ import { AuthService } from '../core/services/auth.service';
 
       <!-- Main content -->
       <main class="main">
-        <router-outlet></router-outlet>
+        @if (auth.isPendiente()) {
+          <div class="pending-screen">
+            <mat-icon class="pending-icon">hourglass_empty</mat-icon>
+            <h2>Cuenta pendiente de aprobación</h2>
+            <p>Tu cuenta fue registrada correctamente. Un administrador debe aprobarla antes de que puedas acceder.</p>
+            <p class="pending-email">{{ auth.user()?.email }}</p>
+            <button class="btn-logout" (click)="logout()">
+              <mat-icon>logout</mat-icon> Cerrar sesión
+            </button>
+          </div>
+        } @else {
+          <router-outlet></router-outlet>
+        }
       </main>
     </div>
   `,
@@ -128,6 +145,11 @@ import { AuthService } from '../core/services/auth.service';
     .sidebar__item--active { background: rgba(59,130,246,.18); color: #60a5fa; }
     .sidebar__item--active mat-icon { color: #60a5fa; }
     .sidebar__item--disabled { opacity: .4; pointer-events: none; }
+    .sidebar__section {
+      font-size: 10px; font-weight: 600; color: #475569;
+      text-transform: uppercase; letter-spacing: .8px;
+      padding: 12px 12px 4px; margin-top: 4px;
+    }
 
     .sidebar__user {
       display: flex;
@@ -161,6 +183,23 @@ import { AuthService } from '../core/services/auth.service';
       display: flex;
       flex-direction: column;
     }
+
+    /* ── Pending screen ── */
+    .pending-screen {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 48px; text-align: center; color: #475569;
+    }
+    .pending-icon { font-size: 56px; width: 56px; height: 56px; color: #f59e0b; }
+    .pending-screen h2 { font-size: 20px; font-weight: 700; color: #0f172a; margin: 0; }
+    .pending-screen p { font-size: 14px; margin: 0; max-width: 380px; }
+    .pending-email { font-size: 13px; color: #94a3b8; }
+    .btn-logout {
+      margin-top: 8px; display: flex; align-items: center; gap: 6px;
+      background: none; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 9px 16px; font-size: 14px; color: #64748b; cursor: pointer;
+    }
+    .btn-logout:hover { background: #f8fafc; }
   `],
 })
 export class ShellComponent {

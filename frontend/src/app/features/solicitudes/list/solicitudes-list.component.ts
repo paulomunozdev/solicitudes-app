@@ -283,9 +283,11 @@ export class SolicitudesListComponent implements OnInit {
       page:      this.page(),
       pageSize:  this.pageSize,
     }).subscribe({
-      next: (r) => {
-        this.solicitudes.set(r.items);
-        this.total.set(r.total);
+      next: (r: any) => {
+        const items = Array.isArray(r) ? r : (r.items ?? []);
+        const total = Array.isArray(r) ? r.length : (r.total ?? 0);
+        this.solicitudes.set(items);
+        this.total.set(total);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),

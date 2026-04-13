@@ -42,13 +42,21 @@ public class SolicitudRepository(AppDbContext db) : ISolicitudRepository
 
     public async Task<(IEnumerable<Solicitud> Items, int Total)> GetPagedAsync(
         EstadoSolicitud? estado, PrioridadSolicitud? prioridad,
-        string? busqueda, int page, int pageSize, CancellationToken ct = default)
+        string? busqueda, int page, int pageSize,
+        string? soloBu = null, Guid? soloUsuarioId = null,
+        CancellationToken ct = default)
     {
         var q = db.Solicitudes
             .Include(s => s.UsuarioCreador)
             .Include(s => s.ConsultorAsignado)
             .Include(s => s.Comentarios)
             .AsQueryable();
+
+        // Filtros de visibilidad por rol
+        if (!string.IsNullOrWhiteSpace(soloBu))
+            q = q.Where(s => s.UnidadNegocio == soloBu);
+        else if (soloUsuarioId.HasValue)
+            q = q.Where(s => s.UsuarioCreadorId == soloUsuarioId.Value);
 
         if (estado.HasValue)
             q = q.Where(s => s.Estado == estado.Value);

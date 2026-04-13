@@ -79,3 +79,17 @@ public record ActualizarCategoriaRequest(string Nombre, string Color, bool Activ
 public record UnidadNegocioDto(Guid Id, string Nombre, string Color, bool Activo);
 public record CrearUnidadNegocioRequest(string Nombre, string Color);
 public record ActualizarUnidadNegocioRequest(string Nombre, string Color, bool Activo);
+
+public record UsuarioDto(
+    Guid Id,
+    string Nombre,
+    string Email,
+    string? Foto,
+    int Rol,
+    string RolNombre,
+    string? UnidadNegocioNombre,
+    bool Activo,
+    DateTime UltimoAcceso
+);
+
+public record ActualizarUsuarioRequest(int Rol, string? UnidadNegocioNombre);

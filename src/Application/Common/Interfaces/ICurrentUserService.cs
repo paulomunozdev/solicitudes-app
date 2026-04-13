@@ -1,3 +1,5 @@
+using Domain.Enums;
+
 namespace Application.Common.Interfaces;
 
 public interface ICurrentUserService
@@ -6,6 +8,7 @@ public interface ICurrentUserService
     Guid TenantId { get; }
     string Email { get; }
     string UserName { get; }
-    string Role { get; }
+    RolUsuario Rol { get; }
+    string? UnidadNegocioNombre { get; }
     bool IsAuthenticated { get; }
 }

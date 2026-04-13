@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
@@ -16,7 +17,18 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
 
     public string UserName => User?.FindFirst(ClaimTypes.Name)?.Value ?? Email;
 
-    public string Role => User?.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+    public RolUsuario Rol
+    {
+        get
+        {
+            var val = User?.FindFirst("rol")?.Value;
+            return int.TryParse(val, out var i) && Enum.IsDefined(typeof(RolUsuario), i)
+                ? (RolUsuario)i
+                : RolUsuario.Solicitante;
+        }
+    }
+
+    public string? UnidadNegocioNombre => User?.FindFirst("unidadNegocio")?.Value;
 
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 }

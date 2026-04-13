@@ -20,7 +20,9 @@ public enum PrioridadSolicitud
 
 public enum RolUsuario
 {
-    Cliente = 1,
-    Consultor = 2,
-    Admin = 3
+    Pendiente    = 0,   // Registrado, esperando aprobación
+    Solicitante  = 1,   // Puede crear y ver sus propias solicitudes / BU
+    Gestor       = 2,   // Ve y gestiona todas las solicitudes del tenant
+    Admin        = 3,   // Control total + panel de administración
+    Observador   = 4,   // Solo lectura de las solicitudes de su BU
 }

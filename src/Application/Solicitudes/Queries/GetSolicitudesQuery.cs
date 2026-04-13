@@ -1,3 +1,4 @@
+using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -13,12 +14,26 @@ public record GetSolicitudesQuery(
     int PageSize = 10
 ) : IRequest<PagedResult<SolicitudDto>>;
 
-public class GetSolicitudesHandler(IUnitOfWork uow) : IRequestHandler<GetSolicitudesQuery, PagedResult<SolicitudDto>>
+public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentUser)
+    : IRequestHandler<GetSolicitudesQuery, PagedResult<SolicitudDto>>
 {
     public async Task<PagedResult<SolicitudDto>> Handle(GetSolicitudesQuery query, CancellationToken ct)
     {
+        // Calcular filtros de visibilidad según rol
+        string? soloBu       = null;
+        Guid?   soloUsuario  = null;
+
+        if (currentUser.Rol is RolUsuario.Solicitante or RolUsuario.Observador)
+        {
+            if (!string.IsNullOrWhiteSpace(currentUser.UnidadNegocioNombre))
+                soloBu = currentUser.UnidadNegocioNombre;
+            else
+                soloUsuario = currentUser.UserId;
+        }
+
         var (solicitudes, total) = await uow.Solicitudes.GetPagedAsync(
-            query.Estado, query.Prioridad, query.Busqueda, query.Page, query.PageSize, ct);
+            query.Estado, query.Prioridad, query.Busqueda, query.Page, query.PageSize,
+            soloBu, soloUsuario, ct);
 
         var items = solicitudes.Select(s => new SolicitudDto(
             s.Id, s.Titulo, s.Descripcion,
