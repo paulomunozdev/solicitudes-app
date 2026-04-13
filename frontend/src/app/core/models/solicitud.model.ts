@@ -79,3 +79,13 @@ export interface AgregarComentarioRequest {
   texto: string;
   esInterno: boolean;
 }
+
+export interface ArchivoAdjunto {
+  id: string;
+  nombreArchivo: string;
+  blobUrl: string;
+  contentType: string;
+  tamanoBytes: number;
+  subidoPorNombre: string;
+  creadoEn: string;
+}

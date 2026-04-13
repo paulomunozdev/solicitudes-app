@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
     public DbSet<ArchivoAdjunto> Archivos => Set<ArchivoAdjunto>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<UnidadNegocio> UnidadesNegocio => Set<UnidadNegocio>();
+    public DbSet<AuditoriaEntry> Auditoria => Set<AuditoriaEntry>();
 
     // IAppDbContext
     Task<List<UnidadNegocio>> IAppDbContext.GetUnidadesNegocioAsync(bool soloActivas, CancellationToken ct)
@@ -116,6 +117,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
             e.Property(x => x.BlobUrl).IsRequired().HasMaxLength(1000);
             e.Property(x => x.ContentType).HasMaxLength(100);
             e.HasOne(x => x.Solicitud).WithMany(s => s.Archivos).HasForeignKey(x => x.SolicitudId);
+            e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
+        });
+
+        // AuditoriaEntry — never deleted, no global filter (admins pueden ver todo el historial)
+        modelBuilder.Entity<AuditoriaEntry>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.EntidadTipo).IsRequired().HasMaxLength(100);
+            e.Property(x => x.Accion).IsRequired().HasMaxLength(100);
+            e.Property(x => x.UsuarioNombre).IsRequired().HasMaxLength(200);
+            e.Property(x => x.Detalle).HasMaxLength(2000);
             e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
         });
     }

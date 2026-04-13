@@ -101,3 +101,25 @@ public record UsuarioDto(
 );
 
 public record ActualizarUsuarioRequest(int Rol, string? UnidadNegocioNombre);
+
+public record ArchivoAdjuntoDto(
+    Guid Id,
+    string NombreArchivo,
+    string BlobUrl,
+    string ContentType,
+    long TamanoBytes,
+    string SubidoPorNombre,
+    DateTime CreadoEn
+);
+
+public record ReasignarSolicitudRequest(Guid? ConsultorId);
+
+public record AuditoriaDto(
+    Guid Id,
+    string EntidadTipo,
+    Guid EntidadId,
+    string Accion,
+    string UsuarioNombre,
+    string? Detalle,
+    DateTime CreadoEn
+);

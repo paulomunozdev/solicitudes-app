@@ -38,10 +38,16 @@ const TABS: TabConfig[] = [
         <h1 class="page-title">Solicitudes</h1>
         <p class="page-subtitle">{{ total() }} solicitudes encontradas</p>
       </div>
-      <button class="btn-primary" (click)="nueva()">
-        <mat-icon>add</mat-icon>
-        Nueva solicitud
-      </button>
+      <div class="header-actions">
+        <button class="btn-secondary" (click)="exportar()" [disabled]="exportando()" title="Exportar a Excel">
+          @if (exportando()) { <span class="btn-spinner-dark"></span> } @else { <mat-icon>download</mat-icon> }
+          Exportar
+        </button>
+        <button class="btn-primary" (click)="nueva()">
+          <mat-icon>add</mat-icon>
+          Nueva solicitud
+        </button>
+      </div>
     </div>
 
     <!-- Tabs / Vistas -->
@@ -156,6 +162,24 @@ const TABS: TabConfig[] = [
     .page-header { display: flex; align-items: flex-start; justify-content: space-between; }
     .page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; }
     .page-subtitle { font-size: 13px; color: #64748b; margin: 4px 0 0; }
+
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+
+    .btn-secondary {
+      display: flex; align-items: center; gap: 6px;
+      background: #fff; color: #374151;
+      border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 9px 16px; font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-secondary:hover:not(:disabled) { background: #f8fafc; }
+    .btn-secondary:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-secondary mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .btn-spinner-dark {
+      width: 16px; height: 16px; border: 2px solid #e2e8f0;
+      border-top-color: #374151; border-radius: 50%;
+      animation: spin .7s linear infinite; display: inline-block;
+    }
 
     .btn-primary {
       display: flex; align-items: center; gap: 6px;
@@ -283,6 +307,7 @@ export class SolicitudesListComponent implements OnInit {
 
   readonly solicitudes = signal<Solicitud[]>([]);
   readonly loading = signal(true);
+  readonly exportando = signal(false);
   readonly total = signal(0);
   readonly page = signal(1);
   readonly pageSize = 10;
@@ -369,6 +394,29 @@ export class SolicitudesListComponent implements OnInit {
   goPage(p: number): void { this.page.set(p); this.cargar(); }
   clearBusqueda(): void { this.busqueda = ''; this.page.set(1); this.cargar(); }
   clearFiltros(): void { this.busqueda = ''; this.filtroPrioridad = null; this.page.set(1); this.cargar(); }
+
+  exportar(): void {
+    this.exportando.set(true);
+    const v = this.vista();
+    this.svc.exportarExcel({
+      prioridad:    this.filtroPrioridad ?? undefined,
+      busqueda:     this.busqueda || undefined,
+      soloMias:     v === 'mias'     || undefined,
+      soloActivas:  v === 'activas'  || undefined,
+      soloCerradas: v === 'cerradas' || undefined,
+    }).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `solicitudes_${new Date().toISOString().slice(0,10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exportando.set(false);
+      },
+      error: () => this.exportando.set(false),
+    });
+  }
 
   min(a: number, b: number): number { return Math.min(a, b); }
   nueva(): void { this.router.navigate(['/solicitudes/nueva']); }

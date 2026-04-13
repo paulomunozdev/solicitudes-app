@@ -13,6 +13,7 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Realtime;
 using Infrastructure.ServiceBus;
+using Infrastructure.Storage;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -105,6 +106,12 @@ if (!string.IsNullOrWhiteSpace(serviceBusConnectionString))
     builder.Services.AddScoped<IServiceBusPublisher, ServiceBusPublisher>();
 else
     builder.Services.AddScoped<IServiceBusPublisher, NullServiceBusPublisher>();
+
+// ── Blob Storage ──────────────────────────────────────────────
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+
+// ── Auditoría ─────────────────────────────────────────────────
+builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 
 // ── SignalR ────────────────────────────────────────────────────
 builder.Services.AddSignalR();

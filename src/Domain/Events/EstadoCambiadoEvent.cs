@@ -7,7 +7,10 @@ public record EstadoCambiadoEvent(
     Guid TenantId,
     EstadoSolicitud EstadoAnterior,
     EstadoSolicitud EstadoNuevo,
-    Guid UsuarioId
+    Guid UsuarioId,
+    string Titulo = "",
+    string UsuarioCreadorNombre = "",
+    string? UsuarioCreadorEmail = null
 ) : IDomainEvent
 {
     public Guid EventId { get; } = Guid.NewGuid();

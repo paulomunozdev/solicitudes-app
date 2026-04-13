@@ -32,7 +32,11 @@ public class Solicitud : TenantEntity
         var estadoAnterior = Estado;
         Estado = nuevoEstado;
         ActualizadoEn = DateTime.UtcNow;
-        _domainEvents.Add(new EstadoCambiadoEvent(Id, TenantId, estadoAnterior, nuevoEstado, usuarioId));
+        _domainEvents.Add(new EstadoCambiadoEvent(
+            Id, TenantId, estadoAnterior, nuevoEstado, usuarioId,
+            Titulo,
+            UsuarioCreador?.Nombre ?? string.Empty,
+            UsuarioCreador?.Email));
     }
 
     public void AsignarConsultor(Guid consultorId)

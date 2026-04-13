@@ -21,7 +21,8 @@ public class ActualizarEstadoHandler(
     IUnitOfWork uow,
     ICurrentUserService currentUser,
     IServiceBusPublisher publisher,
-    IRealtimeNotifier realtime
+    IRealtimeNotifier realtime,
+    IAuditoriaService auditoria
 ) : IRequestHandler<ActualizarEstadoCommand>
 {
     public async Task Handle(ActualizarEstadoCommand cmd, CancellationToken ct)
@@ -29,7 +30,7 @@ public class ActualizarEstadoHandler(
         var solicitud = await uow.Solicitudes.GetByIdAsync(cmd.SolicitudId, ct)
             ?? throw new KeyNotFoundException($"Solicitud {cmd.SolicitudId} no encontrada.");
 
-        var estadoAnterior = (int)solicitud.Estado;
+        var estadoAnterior = solicitud.Estado;
         solicitud.CambiarEstado(cmd.NuevoEstado, currentUser.UserId);
         await uow.SaveChangesAsync(ct);
 
@@ -39,6 +40,11 @@ public class ActualizarEstadoHandler(
         solicitud.ClearDomainEvents();
 
         await realtime.NotificarEstadoCambiadoAsync(
-            solicitud.TenantId, solicitud.Id, estadoAnterior, (int)cmd.NuevoEstado, ct);
+            solicitud.TenantId, solicitud.Id, (int)estadoAnterior, (int)cmd.NuevoEstado, ct);
+
+        await auditoria.RegistrarAsync(
+            currentUser.TenantId, "Solicitud", cmd.SolicitudId,
+            "CambioEstado", currentUser.UserId, currentUser.UserName,
+            $"{estadoAnterior} → {cmd.NuevoEstado}", ct);
     }
 }
