@@ -27,7 +27,16 @@ steps:
       projects: src/API/API.csproj
       arguments: >
         -c $(buildConfiguration)
+        --self-contained false
         -o $(Build.ArtifactStagingDirectory)/api
+
+  - task: ArchiveFiles@2
+    displayName: Zip publish output
+    inputs:
+      rootFolderOrFile: $(Build.ArtifactStagingDirectory)/api
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: $(Build.ArtifactStagingDirectory)/api.zip
 
   - task: AzureWebApp@1
     displayName: Deploy to Azure App Service
@@ -35,5 +44,6 @@ steps:
       azureSubscription: sc-solicitudesapp
       appType: webAppLinux
       appName: api-solicitudesapp
-      package: $(Build.ArtifactStagingDirectory)/api
+      package: $(Build.ArtifactStagingDirectory)/api.zip
       runtimeStack: DOTNETCORE|8.0
+      deploymentMethod: zipDeploy
