@@ -104,7 +104,6 @@ app.MapControllers();
 app.MapHub<Infrastructure.Realtime.SolicitudesHub>("/hubs/solicitudes");
 
 // ── Diagnóstico temporal ───────────────────────────────────────
-app.MapGet("/api/diag/routes", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
-    eds.Endpoints.Select(e => e.DisplayName).OrderBy(n => n)).AllowAnonymous();
+app.MapGet("/api/diag/version", () => Results.Ok(new { build = "2026-04-13-v3", controllers = new[] { "Solicitudes", "Usuarios", "Categorias", "UnidadesNegocio" } })).AllowAnonymous();
 
 app.Run();
