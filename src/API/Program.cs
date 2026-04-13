@@ -93,11 +93,8 @@ var app = builder.Build();
 // ── Middleware pipeline ────────────────────────────────────────
 app.UseMiddleware<ExceptionMiddleware>();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 app.UseCors("Angular");
