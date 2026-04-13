@@ -1,12 +1,10 @@
 name: Deploy API
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
+    inputs:
+      disabled:
+        description: 'Deployment handled by Azure DevOps pipeline'
 
 jobs:
   build-and-deploy:
