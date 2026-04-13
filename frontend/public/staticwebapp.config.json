@@ -4,6 +4,7 @@
     "exclude": ["/assets/*", "/*.{png,jpg,gif,ico,css,js}"]
   },
   "globalHeaders": {
-    "cache-control": "no-cache"
+    "cache-control": "no-cache",
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
   }
 }
