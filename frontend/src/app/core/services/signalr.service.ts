@@ -47,7 +47,7 @@ export class SignalRService {
     this.hub
       .start()
       .then(() => this.hub!.invoke('UnirseATenant', tenantId))
-      .catch(err => console.error('[SignalR] Error al conectar:', err));
+      .catch(err => console.error('[SignalR] Error al conectar:', (err as Error)?.message ?? 'error desconocido'));
   }
 
   disconnect(): void {
