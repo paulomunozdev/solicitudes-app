@@ -88,77 +88,33 @@ public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentU
 // ── Stats ──────────────────────────────────────────────────────
 public record GetSolicitudesStatsQuery : IRequest<SolicitudesStatsDto>;
 
+/// <summary>
+/// Delega todo el cálculo al repositorio, que ejecuta GROUP BY directamente en SQL.
+/// El handler solo mapea los datos crudos a los DTOs de presentación.
+/// </summary>
 public class GetSolicitudesStatsHandler(IUnitOfWork uow) : IRequestHandler<GetSolicitudesStatsQuery, SolicitudesStatsDto>
 {
     public async Task<SolicitudesStatsDto> Handle(GetSolicitudesStatsQuery _, CancellationToken ct)
     {
-        var all = await uow.Solicitudes.GetAllAsync(ct);
-        var lista = all.ToList();
+        var raw = await uow.Solicitudes.GetStatsAsync(ct);
 
-        // ── Métricas base ──────────────────────────────────────────
-        var porDia = lista
-            .GroupBy(s => s.CreadoEn.Date)
-            .OrderBy(g => g.Key)
-            .TakeLast(30)
-            .Select(g => new SolicitudesPorDiaDto(g.Key.ToString("dd/MM"), g.Count()));
-
-        // ── Por Unidad de Negocio ──────────────────────────────────
-        var porBu = lista
-            .Where(s => !string.IsNullOrWhiteSpace(s.UnidadNegocio))
-            .GroupBy(s => s.UnidadNegocio!)
-            .Select(g => new ConteoItemDto(g.Key, g.Count()))
-            .OrderByDescending(x => x.Cantidad);
-
-        // ── Por Categoría ──────────────────────────────────────────
-        var porCategoria = lista
-            .Where(s => !string.IsNullOrWhiteSpace(s.Categoria))
-            .GroupBy(s => s.Categoria!)
-            .Select(g => new ConteoItemDto(g.Key, g.Count()))
-            .OrderByDescending(x => x.Cantidad);
-
-        // ── Por Prioridad ──────────────────────────────────────────
-        var porPrioridad = lista
-            .GroupBy(s => s.Prioridad)
-            .Select(g => new ConteoItemDto(g.Key.ToString(), g.Count()))
-            .OrderBy(x => x.Nombre);
-
-        // ── Tiempo promedio de resolución (días) ───────────────────
-        var resueltas = lista.Where(s => s.Estado == EstadoSolicitud.Resuelto).ToList();
-        var tiempoPromedio = resueltas.Count > 0
-            ? resueltas.Average(s => (s.ActualizadoEn - s.CreadoEn).TotalDays)
-            : 0;
-
-        // ── Sin asignar (activas sin consultor) ────────────────────
-        var sinAsignar = lista.Count(s =>
-            s.ConsultorAsignadoId == null &&
-            (s.Estado == EstadoSolicitud.Pendiente ||
-             s.Estado == EstadoSolicitud.EnRevision ||
-             s.Estado == EstadoSolicitud.EnProgreso));
-
-        // ── Por resolutor ──────────────────────────────────────────
-        var porResolutor = lista
-            .Where(s => s.ConsultorAsignado != null)
-            .GroupBy(s => s.ConsultorAsignado!.Nombre)
-            .Select(g => new ResolutorStatsDto(
-                g.Key,
-                g.Count(),
-                g.Count(s => s.Estado == EstadoSolicitud.Resuelto)))
-            .OrderByDescending(x => x.Asignadas);
+        // Conteos por estado a partir del diccionario compacto del repositorio
+        int Conteo(EstadoSolicitud e) => raw.PorEstado.FirstOrDefault(x => x.Estado == e)?.Count ?? 0;
 
         return new SolicitudesStatsDto(
-            Total:                       lista.Count,
-            Pendientes:                  lista.Count(s => s.Estado == EstadoSolicitud.Pendiente),
-            EnRevision:                  lista.Count(s => s.Estado == EstadoSolicitud.EnRevision),
-            EnDesarrollo:                lista.Count(s => s.Estado == EstadoSolicitud.EnProgreso),
-            Completadas:                 lista.Count(s => s.Estado == EstadoSolicitud.Resuelto),
-            Rechazadas:                  lista.Count(s => s.Estado == EstadoSolicitud.Cancelado),
-            PorDia:                      porDia,
-            PorBu:                       porBu,
-            PorCategoria:                porCategoria,
-            PorPrioridad:                porPrioridad,
-            TiempoPromedioResolucionDias: Math.Round(tiempoPromedio, 1),
-            SinAsignar:                  sinAsignar,
-            PorResolutor:                porResolutor
+            Total:                        raw.PorEstado.Sum(x => x.Count),
+            Pendientes:                   Conteo(EstadoSolicitud.Pendiente),
+            EnRevision:                   Conteo(EstadoSolicitud.EnRevision),
+            EnDesarrollo:                 Conteo(EstadoSolicitud.EnProgreso),
+            Completadas:                  Conteo(EstadoSolicitud.Resuelto),
+            Rechazadas:                   Conteo(EstadoSolicitud.Cancelado),
+            PorDia:                       raw.PorDia.Select(x => new SolicitudesPorDiaDto(x.Fecha.ToString("dd/MM"), x.Count)),
+            PorBu:                        raw.PorBu.Select(x => new ConteoItemDto(x.Nombre, x.Count)),
+            PorCategoria:                 raw.PorCategoria.Select(x => new ConteoItemDto(x.Nombre, x.Count)),
+            PorPrioridad:                 raw.PorPrioridad.Select(x => new ConteoItemDto(x.Prioridad.ToString(), x.Count)),
+            TiempoPromedioResolucionDias: raw.TiempoPromedioResolucionDias,
+            SinAsignar:                   raw.SinAsignar,
+            PorResolutor:                 raw.PorResolutor.Select(x => new ResolutorStatsDto(x.Nombre, x.Asignadas, x.Completadas))
         );
     }
 }
