@@ -5,45 +5,31 @@ trigger:
   paths:
     include:
       - src/**
+      - Dockerfile
 
 pool:
   vmImage: ubuntu-latest
 
 variables:
-  buildConfiguration: Release
+  acrName: acrsolicidesapp
+  imageName: api-solicitudesapp
 
 steps:
-  - task: UseDotNet@2
-    displayName: Setup .NET 8
+  - task: Docker@2
+    displayName: Build and push Docker image
     inputs:
-      packageType: sdk
-      version: 8.0.x
+      containerRegistry: sc-acr-solicitudesapp
+      repository: $(imageName)
+      command: buildAndPush
+      Dockerfile: Dockerfile
+      buildContext: .
+      tags: |
+        $(Build.BuildId)
+        latest
 
-  - task: DotNetCoreCLI@2
-    displayName: Publish API
-    inputs:
-      command: publish
-      publishWebProjects: false
-      projects: src/API/API.csproj
-      arguments: >
-        -c $(buildConfiguration)
-        --self-contained false
-        -o $(Build.ArtifactStagingDirectory)/api
-
-  - task: ArchiveFiles@2
-    displayName: Zip publish output
-    inputs:
-      rootFolderOrFile: $(Build.ArtifactStagingDirectory)/api
-      includeRootFolder: false
-      archiveType: zip
-      archiveFile: $(Build.ArtifactStagingDirectory)/api.zip
-
-  - task: AzureWebApp@1
-    displayName: Deploy to Azure App Service
+  - task: AzureWebAppContainer@1
+    displayName: Deploy container to App Service
     inputs:
       azureSubscription: sc-solicitudesapp
-      appType: webAppLinux
       appName: api-solicitudesapp
-      package: $(Build.ArtifactStagingDirectory)/api.zip
-      runtimeStack: DOTNETCORE|8.0
-      deploymentMethod: zipDeploy
+      containers: $(acrName).azurecr.io/$(imageName):$(Build.BuildId)
