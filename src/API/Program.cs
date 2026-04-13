@@ -103,4 +103,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<Infrastructure.Realtime.SolicitudesHub>("/hubs/solicitudes");
 
+// ── Diagnóstico temporal ───────────────────────────────────────
+app.MapGet("/api/diag/routes", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
+    eds.Endpoints.Select(e => e.DisplayName).OrderBy(n => n)).AllowAnonymous();
+
 app.Run();
