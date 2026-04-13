@@ -2,6 +2,7 @@ using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Enums;
 using Domain.Interfaces;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Solicitudes.Queries;
@@ -18,11 +19,28 @@ public record GetSolicitudesQuery(
     bool SoloAsignadaAMi = false
 ) : IRequest<PagedResult<SolicitudDto>>;
 
+public class GetSolicitudesValidator : AbstractValidator<GetSolicitudesQuery>
+{
+    public GetSolicitudesValidator()
+    {
+        RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.PageSize)
+            .GreaterThanOrEqualTo(1).WithMessage("PageSize debe ser al menos 1.")
+            .LessThanOrEqualTo(100).WithMessage("PageSize no puede superar 100.");
+        RuleFor(x => x.Busqueda)
+            .MaximumLength(200).When(x => x.Busqueda != null)
+            .WithMessage("La búsqueda no puede superar 200 caracteres.");
+    }
+}
+
 public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentUser)
     : IRequestHandler<GetSolicitudesQuery, PagedResult<SolicitudDto>>
 {
     public async Task<PagedResult<SolicitudDto>> Handle(GetSolicitudesQuery query, CancellationToken ct)
     {
+        // Clamp defensivo — aunque el validador ya lo rechaza, nunca enviar más de 100 al repo
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+
         // Visibilidad base según rol
         string? soloBu      = null;
         Guid?   soloUsuario = null;
@@ -48,7 +66,7 @@ public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentU
             ? currentUser.UserId : null;
 
         var (solicitudes, total) = await uow.Solicitudes.GetPagedAsync(
-            query.Estado, query.Prioridad, query.Busqueda, query.Page, query.PageSize,
+            query.Estado, query.Prioridad, query.Busqueda, query.Page, pageSize,
             soloBu, soloUsuario, soloAsignadoId,
             query.SoloActivas, query.SoloCerradas, ct);
 
@@ -63,7 +81,7 @@ public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentU
             s.CreadoEn, s.ActualizadoEn, s.Comentarios.Count
         ));
 
-        return new PagedResult<SolicitudDto>(items, total, query.Page, query.PageSize);
+        return new PagedResult<SolicitudDto>(items, total, query.Page, pageSize);
     }
 }
 

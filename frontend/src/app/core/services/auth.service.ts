@@ -38,7 +38,7 @@ const msalConfig: Configuration = {
     redirectUri: window.location.origin,
   },
   cache: {
-    cacheLocation: 'localStorage',
+    cacheLocation: 'sessionStorage', // sessionStorage: tokens no persisten entre tabs ni al cerrar
   },
 };
 

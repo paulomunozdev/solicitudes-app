@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface EstadoCambiadoEvent {
   solicitudId: string;
@@ -18,14 +19,22 @@ export interface ComentarioAgregadoEvent {
 
 @Injectable({ providedIn: 'root' })
 export class SignalRService {
+  private readonly auth = inject(AuthService);
   private hub?: signalR.HubConnection;
-  readonly estadoCambiado$ = new Subject<EstadoCambiadoEvent>();
+
+  readonly estadoCambiado$    = new Subject<EstadoCambiadoEvent>();
   readonly comentarioAgregado$ = new Subject<ComentarioAgregadoEvent>();
 
   connect(tenantId: string): void {
     if (this.hub) return; // ya conectado
+
+    const hubUrl = environment.apiUrl.replace(/\/api$/, '') + '/hubs/solicitudes';
+
     this.hub = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl.replace(/\/api$/, '')}/hubs/solicitudes`)
+      .withUrl(hubUrl, {
+        // Pasa el JWT en cada request de SignalR (query string para WebSocket, header para HTTP)
+        accessTokenFactory: () => this.auth.getToken().then(t => t ?? ''),
+      })
       .withAutomaticReconnect()
       .build();
 
@@ -38,7 +47,7 @@ export class SignalRService {
     this.hub
       .start()
       .then(() => this.hub!.invoke('UnirseATenant', tenantId))
-      .catch(console.error);
+      .catch(err => console.error('[SignalR] Error al conectar:', err));
   }
 
   disconnect(): void {
