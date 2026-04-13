@@ -45,6 +45,8 @@ export interface Solicitud {
   prioridad: PrioridadSolicitud;
   prioridadNombre: string;
   categoria: string | null;
+  unidadNegocio: string | null;
+  nombreSolicitante: string | null;
   fechaLimite: string | null;
   usuarioCreadorId: string;
   usuarioCreadorNombre: string;
@@ -68,6 +70,8 @@ export interface CrearSolicitudRequest {
   descripcion: string;
   prioridad: PrioridadSolicitud;
   categoria?: string;
+  unidadNegocio?: string;
+  nombreSolicitante?: string;
   fechaLimite?: string;
 }
 

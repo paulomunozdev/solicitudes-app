@@ -10,6 +10,8 @@ public class Solicitud : TenantEntity
     public EstadoSolicitud Estado { get; set; } = EstadoSolicitud.Pendiente;
     public PrioridadSolicitud Prioridad { get; set; } = PrioridadSolicitud.Media;
     public string? Categoria { get; set; }
+    public string? UnidadNegocio { get; set; }
+    public string? NombreSolicitante { get; set; }
     public DateTime? FechaLimite { get; set; }
 
     public Guid UsuarioCreadorId { get; set; }

@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { SolicitudesService } from '../../../core/services/solicitudes.service';
 import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
+import { UnidadesNegocioService, UnidadNegocio } from '../../../core/services/unidades-negocio.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { PrioridadSolicitud, PRIORIDAD_LABELS } from '../../../core/models/solicitud.model';
 
 @Component({
@@ -45,6 +47,28 @@ import { PrioridadSolicitud, PRIORIDAD_LABELS } from '../../../core/models/solic
             }
           </div>
 
+          <!-- Solicitante + Unidad de Negocio -->
+          <div class="section-title">Información del solicitante</div>
+          <div class="row-fields">
+            <div class="field-group">
+              <label class="field-label">Nombre del solicitante <span class="optional">(opcional)</span></label>
+              <input class="field-input" formControlName="nombreSolicitante"
+                [placeholder]="auth.user()?.name ?? 'Nombre de quien solicita'" />
+              <p class="field-hint">Por defecto se usa tu nombre. Cámbialo si ingresas la solicitud a nombre de otra persona.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Unidad de negocio <span class="optional">(opcional)</span></label>
+              <select class="field-input field-select" formControlName="unidadNegocio">
+                <option value="">Sin unidad</option>
+                @for (u of unidades(); track u.id) {
+                  <option [value]="u.nombre">{{ u.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Prioridad + Categoría -->
+          <div class="section-title">Clasificación</div>
           <div class="row-fields">
             <div class="field-group">
               <label class="field-label">Prioridad</label>
@@ -130,6 +154,12 @@ import { PrioridadSolicitud, PRIORIDAD_LABELS } from '../../../core/models/solic
     .field-error { font-size: 12px; color: #ef4444; margin: 0; }
 
     .row-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .section-title {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .6px;
+      margin-bottom: 12px; margin-top: 4px;
+    }
+    .field-hint { font-size: 11px; color: #94a3b8; margin: 0; }
 
     /* Error banner */
     .error-banner {
@@ -172,14 +202,18 @@ export class SolicitudesCreateComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly svc = inject(SolicitudesService);
   private readonly catSvc = inject(CategoriasService);
+  private readonly unidadSvc = inject(UnidadesNegocioService);
   private readonly router = inject(Router);
+  readonly auth = inject(AuthService);
 
   readonly guardando = signal(false);
   readonly error = signal('');
   readonly categorias = signal<Categoria[]>([]);
+  readonly unidades = signal<UnidadNegocio[]>([]);
 
   ngOnInit(): void {
     this.catSvc.getAll(true).subscribe(data => this.categorias.set(data));
+    this.unidadSvc.getAll(true).subscribe(data => this.unidades.set(data));
   }
 
   readonly prioridades = Object.entries(PRIORIDAD_LABELS).map(([value, label]) => ({
@@ -188,25 +222,33 @@ export class SolicitudesCreateComponent implements OnInit {
   }));
 
   readonly form = this.fb.group({
-    titulo: ['', [Validators.required, Validators.maxLength(200)]],
-    descripcion: ['', [Validators.required, Validators.maxLength(2000)]],
-    prioridad: [PrioridadSolicitud.Media, Validators.required],
-    categoria: [''],
+    titulo:            ['', [Validators.required, Validators.maxLength(200)]],
+    descripcion:       ['', [Validators.required, Validators.maxLength(2000)]],
+    nombreSolicitante: [''],
+    unidadNegocio:     [''],
+    prioridad:         [PrioridadSolicitud.Media, Validators.required],
+    categoria:         [''],
   });
 
   guardar(): void {
     if (this.form.invalid) return;
     this.guardando.set(true);
     this.error.set('');
-    const { titulo, descripcion, prioridad, categoria } = this.form.value;
-    this.svc.crear({ titulo: titulo!, descripcion: descripcion!, prioridad: prioridad!, categoria: categoria || undefined })
-      .subscribe({
-        next: ({ id }) => this.router.navigate(['/solicitudes', id]),
-        error: () => {
-          this.error.set('Error al crear la solicitud. Intenta nuevamente.');
-          this.guardando.set(false);
-        },
-      });
+    const { titulo, descripcion, prioridad, categoria, unidadNegocio, nombreSolicitante } = this.form.value;
+    this.svc.crear({
+      titulo: titulo!,
+      descripcion: descripcion!,
+      prioridad: prioridad!,
+      categoria:         categoria         || undefined,
+      unidadNegocio:     unidadNegocio     || undefined,
+      nombreSolicitante: nombreSolicitante || undefined,
+    }).subscribe({
+      next: ({ id }) => this.router.navigate(['/solicitudes', id]),
+      error: () => {
+        this.error.set('Error al crear la solicitud. Intenta nuevamente.');
+        this.guardando.set(false);
+      },
+    });
   }
 
   volver(): void { this.router.navigate(['/solicitudes']); }

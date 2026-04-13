@@ -13,6 +13,8 @@ public record CrearSolicitudCommand(
     string Descripcion,
     PrioridadSolicitud Prioridad,
     string? Categoria,
+    string? UnidadNegocio,
+    string? NombreSolicitante,
     DateTime? FechaLimite
 ) : IRequest<Guid>;
 
@@ -51,6 +53,10 @@ public class CrearSolicitudHandler(
             Descripcion = cmd.Descripcion,
             Prioridad = cmd.Prioridad,
             Categoria = cmd.Categoria,
+            UnidadNegocio = cmd.UnidadNegocio,
+            NombreSolicitante = string.IsNullOrWhiteSpace(cmd.NombreSolicitante)
+                ? currentUser.UserName
+                : cmd.NombreSolicitante,
             FechaLimite = cmd.FechaLimite,
             Estado = EstadoSolicitud.Pendiente
         };

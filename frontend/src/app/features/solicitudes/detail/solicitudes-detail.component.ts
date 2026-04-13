@@ -120,9 +120,21 @@ import {
             <h3 class="card-title">Información</h3>
             <div class="meta-list">
               <div class="meta-item">
-                <p class="meta-key">Solicitante</p>
+                <p class="meta-key">Ingresado por</p>
                 <p class="meta-val">{{ s.usuarioCreadorNombre }}</p>
               </div>
+              @if (s.nombreSolicitante && s.nombreSolicitante !== s.usuarioCreadorNombre) {
+                <div class="meta-item">
+                  <p class="meta-key">Solicitante</p>
+                  <p class="meta-val">{{ s.nombreSolicitante }}</p>
+                </div>
+              }
+              @if (s.unidadNegocio) {
+                <div class="meta-item">
+                  <p class="meta-key">Unidad de negocio</p>
+                  <p class="meta-val">{{ s.unidadNegocio }}</p>
+                </div>
+              }
               @if (s.consultorAsignadoNombre) {
                 <div class="meta-item">
                   <p class="meta-key">Asignado a</p>

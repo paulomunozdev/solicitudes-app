@@ -15,7 +15,8 @@ public class GetSolicitudByIdHandler(IUnitOfWork uow) : IRequestHandler<GetSolic
 
         return new SolicitudDto(
             s.Id, s.Titulo, s.Descripcion, s.Estado, s.Estado.ToString(),
-            s.Prioridad, s.Prioridad.ToString(), s.Categoria, s.FechaLimite,
+            s.Prioridad, s.Prioridad.ToString(), s.Categoria, s.UnidadNegocio, s.NombreSolicitante,
+            s.FechaLimite,
             s.UsuarioCreadorId, s.UsuarioCreador?.Nombre ?? string.Empty,
             s.ConsultorAsignadoId, s.ConsultorAsignado?.Nombre,
             s.CreadoEn, s.ActualizadoEn, s.Comentarios.Count

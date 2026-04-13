@@ -34,6 +34,10 @@ import { AuthService } from '../core/services/auth.service';
             <mat-icon>label</mat-icon>
             <span>Categorías</span>
           </a>
+          <a class="sidebar__item" routerLink="/admin/unidades-negocio" routerLinkActive="sidebar__item--active">
+            <mat-icon>corporate_fare</mat-icon>
+            <span>Unidades</span>
+          </a>
         </nav>
 
         <div class="sidebar__user">

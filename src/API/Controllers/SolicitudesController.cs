@@ -49,7 +49,8 @@ public class SolicitudesController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Create([FromBody] CrearSolicitudRequest req, CancellationToken ct)
     {
         var id = await mediator.Send(new CrearSolicitudCommand(
-            req.Titulo, req.Descripcion, req.Prioridad, req.Categoria, req.FechaLimite
+            req.Titulo, req.Descripcion, req.Prioridad, req.Categoria,
+            req.UnidadNegocio, req.NombreSolicitante, req.FechaLimite
         ), ct);
 
         return AcceptedAtAction(nameof(GetById), new { id }, new { id });

@@ -14,8 +14,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
     public DbSet<Comentario> Comentarios => Set<Comentario>();
     public DbSet<ArchivoAdjunto> Archivos => Set<ArchivoAdjunto>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
+    public DbSet<UnidadNegocio> UnidadesNegocio => Set<UnidadNegocio>();
 
     // IAppDbContext
+    Task<List<UnidadNegocio>> IAppDbContext.GetUnidadesNegocioAsync(bool soloActivas, CancellationToken ct)
+    {
+        var q = Set<UnidadNegocio>().AsQueryable();
+        if (soloActivas) q = q.Where(u => u.Activo);
+        return q.OrderBy(u => u.Nombre).ToListAsync(ct);
+    }
+    Task<UnidadNegocio?> IAppDbContext.GetUnidadNegocioByIdAsync(Guid id, CancellationToken ct)
+        => Set<UnidadNegocio>().FirstOrDefaultAsync(u => u.Id == id, ct);
+    void IAppDbContext.AddUnidadNegocio(UnidadNegocio u) => Set<UnidadNegocio>().Add(u);
+
     Task<List<Categoria>> IAppDbContext.GetCategoriasAsync(bool soloActivas, CancellationToken ct)
     {
         var q = Set<Categoria>().AsQueryable();
@@ -71,6 +82,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
             e.Property(x => x.Texto).IsRequired().HasMaxLength(5000);
             e.HasOne(x => x.Solicitud).WithMany(s => s.Comentarios).HasForeignKey(x => x.SolicitudId);
             e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
+        });
+
+        // UnidadNegocio
+        modelBuilder.Entity<UnidadNegocio>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Nombre).IsRequired().HasMaxLength(100);
+            e.Property(x => x.Color).HasMaxLength(20);
+            e.HasOne<Tenant>().WithMany().HasForeignKey(x => x.TenantId);
             e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
         });
 

@@ -24,7 +24,8 @@ public class GetSolicitudesHandler(IUnitOfWork uow) : IRequestHandler<GetSolicit
             s.Id, s.Titulo, s.Descripcion,
             s.Estado, s.Estado.ToString(),
             s.Prioridad, s.Prioridad.ToString(),
-            s.Categoria, s.FechaLimite,
+            s.Categoria, s.UnidadNegocio, s.NombreSolicitante,
+            s.FechaLimite,
             s.UsuarioCreadorId, s.UsuarioCreador?.Nombre ?? string.Empty,
             s.ConsultorAsignadoId, s.ConsultorAsignado?.Nombre,
             s.CreadoEn, s.ActualizadoEn, s.Comentarios.Count

@@ -33,6 +33,8 @@ public record SolicitudDto(
     PrioridadSolicitud Prioridad,
     string PrioridadNombre,
     string? Categoria,
+    string? UnidadNegocio,
+    string? NombreSolicitante,
     DateTime? FechaLimite,
     Guid UsuarioCreadorId,
     string UsuarioCreadorNombre,
@@ -56,6 +58,8 @@ public record CrearSolicitudRequest(
     string Descripcion,
     PrioridadSolicitud Prioridad,
     string? Categoria,
+    string? UnidadNegocio,
+    string? NombreSolicitante,
     DateTime? FechaLimite
 );
 
@@ -71,3 +75,7 @@ public record AgregarComentarioRequest(
 public record CategoriaDto(Guid Id, string Nombre, string Color, bool Activo);
 public record CrearCategoriaRequest(string Nombre, string Color);
 public record ActualizarCategoriaRequest(string Nombre, string Color, bool Activo);
+
+public record UnidadNegocioDto(Guid Id, string Nombre, string Color, bool Activo);
+public record CrearUnidadNegocioRequest(string Nombre, string Color);
+public record ActualizarUnidadNegocioRequest(string Nombre, string Color, bool Activo);

@@ -25,6 +25,11 @@ export const routes: Routes = [
           import('./features/admin/categorias/categorias-admin.component').then(m => m.CategoriasAdminComponent),
       },
       {
+        path: 'admin/unidades-negocio',
+        loadComponent: () =>
+          import('./features/admin/unidades-negocio/unidades-negocio-admin.component').then(m => m.UnidadesNegocioAdminComponent),
+      },
+      {
         path: 'solicitudes',
         children: [
           {
