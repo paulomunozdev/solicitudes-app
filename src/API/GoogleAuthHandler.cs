@@ -23,11 +23,25 @@ public class GoogleAuthHandler(
 {
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // SignalR WebSocket pasa el token como query param en vez del header Authorization
+        string token;
         var authHeader = Request.Headers.Authorization.ToString();
-        if (!authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            token = authHeader["Bearer ".Length..].Trim();
+        }
+        else if (Request.Query.TryGetValue("access_token", out var qt) && !string.IsNullOrEmpty(qt))
+        {
+            // Solo permitir para rutas de SignalR
+            var path = Request.Path;
+            if (!path.StartsWithSegments("/hubs"))
+                return AuthenticateResult.NoResult();
+            token = qt!;
+        }
+        else
+        {
             return AuthenticateResult.NoResult();
-
-        var token = authHeader["Bearer ".Length..].Trim();
+        }
 
         GoogleJsonWebSignature.Payload payload;
         try
