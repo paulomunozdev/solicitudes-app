@@ -26,7 +26,7 @@ public class GetSolicitudesValidator : AbstractValidator<GetSolicitudesQuery>
         RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
         RuleFor(x => x.PageSize)
             .GreaterThanOrEqualTo(1).WithMessage("PageSize debe ser al menos 1.")
-            .LessThanOrEqualTo(100).WithMessage("PageSize no puede superar 100.");
+            .LessThanOrEqualTo(5000).WithMessage("PageSize no puede superar 5000.");
         RuleFor(x => x.Busqueda)
             .MaximumLength(200).When(x => x.Busqueda != null)
             .WithMessage("La búsqueda no puede superar 200 caracteres.");
@@ -38,8 +38,7 @@ public class GetSolicitudesHandler(IUnitOfWork uow, ICurrentUserService currentU
 {
     public async Task<PagedResult<SolicitudDto>> Handle(GetSolicitudesQuery query, CancellationToken ct)
     {
-        // Clamp defensivo — aunque el validador ya lo rechaza, nunca enviar más de 100 al repo
-        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+        var pageSize = Math.Clamp(query.PageSize, 1, 5000);
 
         // Visibilidad base según rol
         string? soloBu      = null;

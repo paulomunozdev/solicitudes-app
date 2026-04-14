@@ -58,19 +58,19 @@ public class GoogleAuthHandler(
             return AuthenticateResult.NoResult(); // No es un token de Google válido
         }
 
-        // ID de usuario deterministico a partir del sub de Google (backwards compat)
-        var userId   = DeterministicGuid(payload.Subject);
         // Tenant fijo de la aplicación (single-tenant)
         var tenantId = Guid.Parse(configuration["App:TenantId"]!);
 
         var email  = payload.Email ?? string.Empty;
         var nombre = payload.Name  ?? email;
 
-        var (rol, unidadNombre) = await ProvisionAsync(userId, tenantId, payload.Subject, email, nombre);
+        // userId inicial (puede ser nuevo o existente — ProvisionAsync devuelve el Id real)
+        var userId = DeterministicGuid(payload.Subject);
+        var (actualUserId, rol, unidadNombre) = await ProvisionAsync(userId, tenantId, payload.Subject, email, nombre);
 
         var claims = new[]
         {
-            new Claim("userId",         userId.ToString()),
+            new Claim("userId",         actualUserId.ToString()),
             new Claim("tenantId",       tenantId.ToString()),
             new Claim(ClaimTypes.Email, email),
             new Claim(ClaimTypes.Name,  nombre),
@@ -85,7 +85,7 @@ public class GoogleAuthHandler(
         return AuthenticateResult.Success(ticket);
     }
 
-    private async Task<(Domain.Enums.RolUsuario Rol, string? UnidadNombre)> ProvisionAsync(
+    private async Task<(Guid UserId, Domain.Enums.RolUsuario Rol, string? UnidadNombre)> ProvisionAsync(
         Guid userId, Guid tenantId, string googleSub, string email, string nombre)
     {
         using var scope = scopeFactory.CreateScope();
@@ -102,9 +102,9 @@ public class GoogleAuthHandler(
             await Infrastructure.Persistence.SlaProvisioner.ProvisionarAsync(db, tenantId);
         }
 
-        // ── Upsert Usuario ───────────────────────────────────────
+        // ── Upsert Usuario (buscar por Email para evitar duplicados) ─
         var usuario = await db.Usuarios.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.Id == userId);
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == email);
 
         if (usuario is null)
         {
@@ -132,7 +132,7 @@ public class GoogleAuthHandler(
         }
 
         await db.SaveChangesAsync();
-        return (usuario.Rol, usuario.UnidadNegocioNombre);
+        return (usuario.Id, usuario.Rol, usuario.UnidadNegocioNombre);
     }
 
     /// <summary>
