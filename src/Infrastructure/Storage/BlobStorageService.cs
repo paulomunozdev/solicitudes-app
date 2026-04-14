@@ -1,6 +1,7 @@
 using Application.Common.Interfaces;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -30,9 +31,7 @@ public class BlobStorageService(IConfiguration config, ILogger<BlobStorageServic
 
     public async Task EliminarArchivoAsync(string blobUrl, CancellationToken ct = default)
     {
-        var uri = new Uri(blobUrl);
-        var blobName = uri.Segments.Last();
-
+        var blobName = ExtraerNombreBlob(blobUrl);
         var containerClient = new BlobContainerClient(_connectionString, _containerName);
         var blobClient = containerClient.GetBlobClient(blobName);
 
@@ -41,5 +40,32 @@ public class BlobStorageService(IConfiguration config, ILogger<BlobStorageServic
             logger.LogInformation("Archivo eliminado del blob: {BlobName}", blobName);
         else
             logger.LogWarning("Intento de eliminar blob inexistente: {BlobUrl}", blobUrl);
+    }
+
+    public string GenerarUrlDescarga(string blobUrl, int minutosExpiracion = 60)
+    {
+        var blobName = ExtraerNombreBlob(blobUrl);
+        var containerClient = new BlobContainerClient(_connectionString, _containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+
+        var sasBuilder = new BlobSasBuilder
+        {
+            BlobContainerName = _containerName,
+            BlobName          = blobName,
+            Resource          = "b",
+            ExpiresOn         = DateTimeOffset.UtcNow.AddMinutes(minutosExpiracion),
+        };
+        sasBuilder.SetPermissions(BlobSasPermissions.Read);
+
+        return blobClient.GenerateSasUri(sasBuilder).ToString();
+    }
+
+    private static string ExtraerNombreBlob(string blobUrl)
+    {
+        var uri = new Uri(blobUrl);
+        // El blob name puede tener subcarpetas; tomamos todo después del contenedor
+        var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        // segments[0] = containerName, el resto es el blob name
+        return string.Join('/', segments.Skip(1));
     }
 }
