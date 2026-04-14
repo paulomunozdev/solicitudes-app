@@ -125,7 +125,7 @@ public class SolicitudesController(IMediator mediator, ICurrentUserService curre
     {
         var id = await mediator.Send(new CrearSolicitudCommand(
             req.Titulo, req.Descripcion, req.Prioridad, req.Categoria,
-            req.UnidadNegocio, req.NombreSolicitante, req.FechaLimite
+            req.UnidadNegocio, req.NombreSolicitante
         ), ct);
 
         return AcceptedAtAction(nameof(GetById), new { id }, new { id });

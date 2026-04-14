@@ -39,6 +39,12 @@ export const routes: Routes = [
           import('./features/admin/unidades-negocio/unidades-negocio-admin.component').then(m => m.UnidadesNegocioAdminComponent),
       },
       {
+        path: 'admin/sla',
+        canActivate: [adminGuard],    // Solo Admin
+        loadComponent: () =>
+          import('./features/admin/sla/sla-admin.component').then(m => m.SlaAdminComponent),
+      },
+      {
         path: 'solicitudes',
         children: [
           {

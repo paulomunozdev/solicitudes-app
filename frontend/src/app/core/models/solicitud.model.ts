@@ -72,7 +72,12 @@ export interface CrearSolicitudRequest {
   categoria?: string;
   unidadNegocio?: string;
   nombreSolicitante?: string;
-  fechaLimite?: string;
+}
+
+export interface SlaConfigDto {
+  prioridad: PrioridadSolicitud;
+  prioridadNombre: string;
+  horas: number;
 }
 
 export interface AgregarComentarioRequest {

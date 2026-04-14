@@ -14,8 +14,7 @@ public record CrearSolicitudCommand(
     PrioridadSolicitud Prioridad,
     string? Categoria,
     string? UnidadNegocio,
-    string? NombreSolicitante,
-    DateTime? FechaLimite
+    string? NombreSolicitante
 ) : IRequest<Guid>;
 
 public class CrearSolicitudValidator : AbstractValidator<CrearSolicitudCommand>
@@ -29,19 +28,12 @@ public class CrearSolicitudValidator : AbstractValidator<CrearSolicitudCommand>
         RuleFor(x => x.Descripcion)
             .NotEmpty().WithMessage("La descripción es requerida.")
             .MaximumLength(5000).WithMessage("La descripción no puede superar 5000 caracteres.");
-
-        RuleFor(x => x.FechaLimite)
-            .GreaterThan(DateTime.UtcNow)
-            .When(x => x.FechaLimite.HasValue)
-            .WithMessage("La fecha límite debe ser futura.")
-            .LessThanOrEqualTo(DateTime.UtcNow.AddYears(5))
-            .When(x => x.FechaLimite.HasValue)
-            .WithMessage("La fecha límite no puede superar 5 años desde hoy.");
     }
 }
 
 public class CrearSolicitudHandler(
     IUnitOfWork uow,
+    IAppDbContext appDb,
     ICurrentUserService currentUser,
     IServiceBusPublisher publisher,
     IRealtimeNotifier realtime
@@ -49,20 +41,27 @@ public class CrearSolicitudHandler(
 {
     public async Task<Guid> Handle(CrearSolicitudCommand cmd, CancellationToken ct)
     {
+        // Calcular FechaLimite según SLA del tenant para esta prioridad
+        var slaConfigs = await appDb.GetSlaConfigsAsync(ct);
+        var sla = slaConfigs.FirstOrDefault(s => s.Prioridad == cmd.Prioridad);
+        var fechaLimite = sla is not null
+            ? DateTime.UtcNow.AddHours(sla.Horas)
+            : (DateTime?)null; // sin SLA configurado: sin fecha límite
+
         var solicitud = new Solicitud
         {
-            TenantId = currentUser.TenantId,
-            UsuarioCreadorId = currentUser.UserId,
-            Titulo = cmd.Titulo,
-            Descripcion = cmd.Descripcion,
-            Prioridad = cmd.Prioridad,
-            Categoria = cmd.Categoria,
-            UnidadNegocio = cmd.UnidadNegocio,
+            TenantId          = currentUser.TenantId,
+            UsuarioCreadorId  = currentUser.UserId,
+            Titulo            = cmd.Titulo,
+            Descripcion       = cmd.Descripcion,
+            Prioridad         = cmd.Prioridad,
+            Categoria         = cmd.Categoria,
+            UnidadNegocio     = cmd.UnidadNegocio,
             NombreSolicitante = string.IsNullOrWhiteSpace(cmd.NombreSolicitante)
-                ? currentUser.UserName
-                : cmd.NombreSolicitante,
-            FechaLimite = cmd.FechaLimite,
-            Estado = EstadoSolicitud.Pendiente
+                                    ? currentUser.UserName
+                                    : cmd.NombreSolicitante,
+            FechaLimite       = fechaLimite,
+            Estado            = EstadoSolicitud.Pendiente
         };
 
         await uow.Solicitudes.AddAsync(solicitud, ct);

@@ -41,6 +41,7 @@ public class UsuariosController(AppDbContext db, ICurrentUserService currentUser
                 };
                 db.Tenants.Add(tenant);
                 await db.SaveChangesAsync(ct);
+                await Infrastructure.Persistence.SlaProvisioner.ProvisionarAsync(db, currentUser.TenantId, ct);
             }
 
             // Primer usuario del tenant → Admin

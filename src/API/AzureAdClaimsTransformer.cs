@@ -77,6 +77,7 @@ public class AzureAdClaimsTransformer(
             tenant = new Tenant { Id = tenantId, Nombre = domain, Plan = "Basic", Activo = true };
             db.Tenants.Add(tenant);
             await db.SaveChangesAsync();
+            await Infrastructure.Persistence.SlaProvisioner.ProvisionarAsync(db, tenantId);
         }
 
         // ── Upsert Usuario ───────────────────────────────────────

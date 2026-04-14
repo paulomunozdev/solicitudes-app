@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Domain.Entities;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -16,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<UnidadNegocio> UnidadesNegocio => Set<UnidadNegocio>();
     public DbSet<AuditoriaEntry> Auditoria => Set<AuditoriaEntry>();
+    public DbSet<SlaConfig> SlaConfigs => Set<SlaConfig>();
 
     // IAppDbContext
     Task<List<UnidadNegocio>> IAppDbContext.GetUnidadesNegocioAsync(bool soloActivas, CancellationToken ct)
@@ -37,6 +39,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
     Task<Categoria?> IAppDbContext.GetCategoriaByIdAsync(Guid id, CancellationToken ct)
         => Set<Categoria>().FirstOrDefaultAsync(c => c.Id == id, ct);
     void IAppDbContext.AddCategoria(Categoria c) => Set<Categoria>().Add(c);
+
+    Task<List<SlaConfig>> IAppDbContext.GetSlaConfigsAsync(CancellationToken ct)
+        => Set<SlaConfig>().OrderBy(s => s.Prioridad).ToListAsync(ct);
+
+    async Task IAppDbContext.UpsertSlaConfigAsync(PrioridadSolicitud prioridad, int horas, CancellationToken ct)
+    {
+        var existing = await Set<SlaConfig>()
+            .FirstOrDefaultAsync(s => s.Prioridad == prioridad, ct);
+
+        if (existing is not null)
+            existing.Horas = horas;
+        else
+            Set<SlaConfig>().Add(new SlaConfig { TenantId = currentUser.TenantId, Prioridad = prioridad, Horas = horas });
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -117,6 +133,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
             e.Property(x => x.BlobUrl).IsRequired().HasMaxLength(1000);
             e.Property(x => x.ContentType).HasMaxLength(100);
             e.HasOne(x => x.Solicitud).WithMany(s => s.Archivos).HasForeignKey(x => x.SolicitudId);
+            e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
+        });
+
+        // SlaConfig — una fila por (TenantId, Prioridad)
+        modelBuilder.Entity<SlaConfig>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.TenantId, x.Prioridad }).IsUnique();
             e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
         });
 

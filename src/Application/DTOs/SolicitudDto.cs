@@ -67,8 +67,7 @@ public record CrearSolicitudRequest(
     PrioridadSolicitud Prioridad,
     string? Categoria,
     string? UnidadNegocio,
-    string? NombreSolicitante,
-    DateTime? FechaLimite
+    string? NombreSolicitante
 );
 
 public record ActualizarEstadoRequest(

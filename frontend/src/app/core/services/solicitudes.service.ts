@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { timeout } from 'rxjs/operators';
-import { ArchivoAdjunto, Comentario, CrearSolicitudRequest, Solicitud } from '../models/solicitud.model';
+import { ArchivoAdjunto, Comentario, CrearSolicitudRequest, SlaConfigDto, Solicitud } from '../models/solicitud.model';
 import { environment } from '../../../environments/environment';
 
 export interface PagedResult<T> {
@@ -100,6 +100,14 @@ export class SolicitudesService {
 
   eliminarArchivo(solicitudId: string, archivoId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${solicitudId}/archivos/${archivoId}`);
+  }
+
+  getSlaConfigs(): Observable<SlaConfigDto[]> {
+    return this.http.get<SlaConfigDto[]>(`${environment.apiUrl}/admin/sla`);
+  }
+
+  actualizarSla(prioridad: number, horas: number): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/admin/sla/${prioridad}`, { horas });
   }
 
   exportarExcel(filter: Omit<SolicitudesFilter, 'page' | 'pageSize' | 'soloAsignadaAMi'> = {}): Observable<Blob> {
