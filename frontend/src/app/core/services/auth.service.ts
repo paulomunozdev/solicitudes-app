@@ -18,6 +18,7 @@ export interface GoogleUser {
 
 export interface UserProfile {
   id: string;
+  tenantId: string;
   nombre: string;
   email: string;
   foto: string | null;

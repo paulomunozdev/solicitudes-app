@@ -89,6 +89,7 @@ public record ActualizarUnidadNegocioRequest(string Nombre, string Color, bool A
 
 public record UsuarioDto(
     Guid Id,
+    Guid TenantId,
     string Nombre,
     string Email,
     string? Foto,

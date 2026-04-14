@@ -345,7 +345,8 @@ export class SolicitudesListComponent implements OnInit {
     });
 
     this.cargar();
-    this.signalr.connect('00000000-0000-0000-0000-000000000002');
+    const tenantId = this.auth.profile()?.tenantId;
+    if (tenantId) this.signalr.connect(tenantId);
     this.signalr.estadoCambiado$.subscribe(() => this.cargar());
   }
 

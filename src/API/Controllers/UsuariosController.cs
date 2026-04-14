@@ -65,7 +65,7 @@ public class UsuariosController(AppDbContext db, ICurrentUserService currentUser
         }
 
         return Ok(new UsuarioDto(
-            usuario.Id, usuario.Nombre, usuario.Email, usuario.Foto,
+            usuario.Id, usuario.TenantId, usuario.Nombre, usuario.Email, usuario.Foto,
             (int)usuario.Rol, usuario.Rol.ToString(),
             usuario.UnidadNegocioNombre, usuario.Activo, usuario.UltimoAcceso));
     }
@@ -87,7 +87,7 @@ public class UsuariosController(AppDbContext db, ICurrentUserService currentUser
         var usuarios = await query.OrderBy(u => u.Nombre).ToListAsync(ct);
 
         var dtos = usuarios.Select(u => new UsuarioDto(
-            u.Id, u.Nombre, u.Email, u.Foto,
+            u.Id, u.TenantId, u.Nombre, u.Email, u.Foto,
             (int)u.Rol, u.Rol.ToString(),
             u.UnidadNegocioNombre, u.Activo, u.UltimoAcceso));
 
