@@ -99,6 +99,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
         modelBuilder.Entity<Comentario>(e =>
         {
             e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.Texto).IsRequired().HasMaxLength(5000);
             e.HasOne(x => x.Solicitud).WithMany(s => s.Comentarios).HasForeignKey(x => x.SolicitudId);
             e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Restrict);
@@ -129,6 +130,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
         modelBuilder.Entity<ArchivoAdjunto>(e =>
         {
             e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever(); // Guid asignado en BaseEntity, no por la BD
             e.Property(x => x.NombreArchivo).IsRequired().HasMaxLength(500);
             e.Property(x => x.BlobUrl).IsRequired().HasMaxLength(1000);
             e.Property(x => x.ContentType).HasMaxLength(100);
@@ -140,6 +142,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
         modelBuilder.Entity<SlaConfig>(e =>
         {
             e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.HasIndex(x => new { x.TenantId, x.Prioridad }).IsUnique();
             e.HasQueryFilter(x => x.TenantId == currentUser.TenantId);
         });
@@ -148,6 +151,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserSe
         modelBuilder.Entity<AuditoriaEntry>(e =>
         {
             e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.EntidadTipo).IsRequired().HasMaxLength(100);
             e.Property(x => x.Accion).IsRequired().HasMaxLength(100);
             e.Property(x => x.UsuarioNombre).IsRequired().HasMaxLength(200);
