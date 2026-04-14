@@ -139,7 +139,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Angular", policy =>
         policy.WithOrigins("http://localhost:4200", "https://witty-meadow-05cecf60f.7.azurestaticapps.net")
               .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-              .WithHeaders("Authorization", "Content-Type", "X-ClientId")
+              .WithHeaders("Authorization", "Content-Type", "X-ClientId", "X-Requested-With")
               .AllowCredentials()));
 
 // ── Swagger ────────────────────────────────────────────────────
