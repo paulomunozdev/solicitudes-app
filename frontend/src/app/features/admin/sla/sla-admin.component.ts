@@ -92,94 +92,71 @@ interface SlaRow extends SlaConfigDto {
     }
   `,
   styles: [`
-    :host { display: flex; flex-direction: column; flex: 1; padding: 32px; gap: 24px; }
+    :host { display: flex; flex-direction: column; flex: 1; padding: 28px 32px; gap: 24px; }
 
-    .page-header { }
-    .page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 6px; }
-    .page-subtitle { font-size: 13px; color: #64748b; margin: 0; line-height: 1.6; max-width: 600px; }
+    .page-title { font-size: 20px; font-weight: 600; color: var(--text-primary, #161b26); letter-spacing: -0.015em; margin: 0; }
+    .page-subtitle { font-size: 13.5px; color: var(--text-tertiary, #6b7386); margin: 4px 0 0; line-height: 1.55; max-width: 600px; }
 
-    .sla-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
-    }
+    .sla-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-    .sla-card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
-      overflow: hidden;
-    }
+    .sla-card { background: var(--n-0, #fff); border: 1px solid var(--border-subtle, #e9ecf2); border-radius: 12px; overflow: hidden; transition: box-shadow 200ms ease; }
+    .sla-card:hover { box-shadow: 0 4px 12px rgba(16,24,40,0.06); }
 
-    .sla-card__header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px; border-bottom: 1px solid #f1f5f9;
-    }
-    .sla-card__deadline {
-      font-size: 12px; color: #64748b; font-weight: 500;
-    }
-    .sla-card__body { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+    .sla-card__header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-subtle, #e9ecf2); }
+    .sla-card__deadline { font-size: 13.5px; font-weight: 600; color: var(--text-primary, #161b26); font-variant-numeric: tabular-nums; }
+    .sla-card__body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
-    .sla-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+    .sla-label { font-size: 12.5px; font-weight: 500; color: var(--text-secondary, #353c4d); }
 
-    .sla-input-row { display: flex; gap: 8px; align-items: center; }
+    .sla-input-row { display: flex; gap: 0; align-items: center; }
     .sla-input {
-      flex: 1; border: 1px solid #e2e8f0; border-radius: 8px;
-      padding: 9px 12px; font-size: 16px; font-weight: 600; color: #0f172a;
-      outline: none; font-family: inherit; text-align: center;
+      flex: 1; border: 1px solid var(--border-default, #dfe3eb); border-radius: 8px 0 0 8px;
+      padding: 0 12px; height: 38px; font-size: 15px; font-weight: 500; color: var(--text-primary, #161b26);
+      outline: none; font-family: inherit; font-variant-numeric: tabular-nums;
+      background: var(--n-0, #fff); transition: border-color 120ms ease, box-shadow 120ms ease;
+      -moz-appearance: textfield;
     }
-    .sla-input:focus { border-color: #3b82f6; }
+    .sla-input:focus { border-color: oklch(0.55 0.190 259); box-shadow: 0 0 0 3px oklch(0.78 0.130 259 / 0.20); z-index: 1; }
     .sla-input::-webkit-outer-spin-button,
-    .sla-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .sla-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
     .btn-guardar {
-      width: 38px; height: 38px; border-radius: 8px; border: none;
-      background: #3b82f6; color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background .15s; flex-shrink: 0;
+      width: 38px; height: 38px; border-radius: 0 8px 8px 0; border: 1px solid var(--border-default, #dfe3eb); border-left: none;
+      background: var(--n-900, #161b26); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; font-family: inherit; transition: background 120ms ease; flex-shrink: 0;
     }
-    .btn-guardar:hover:not(:disabled) { background: #2563eb; }
+    .btn-guardar:hover:not(:disabled) { background: var(--n-800, #232937); }
     .btn-guardar:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-guardar mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    .btn-spinner {
-      width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4);
-      border-top-color: #fff; border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
+    .btn-guardar mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .btn-spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Atajos */
     .shortcuts { display: flex; gap: 6px; flex-wrap: wrap; }
     .shortcut-btn {
-      padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
-      background: #f8fafc; font-size: 11px; color: #475569;
-      cursor: pointer; transition: all .15s;
+      height: 26px; padding: 0 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 500;
+      background: var(--n-75, #f1f3f7); border: 1px solid var(--border-subtle, #e9ecf2);
+      color: var(--text-secondary, #353c4d); cursor: pointer; font-family: inherit;
+      font-variant-numeric: tabular-nums; transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
     }
-    .shortcut-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: #3b82f6; }
-    .shortcut-btn--active { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; font-weight: 600; }
+    .shortcut-btn:hover { background: var(--n-100, #e9ecf2); border-color: var(--border-default, #dfe3eb); }
+    .shortcut-btn--active { background: oklch(0.96 0.030 259); border-color: oklch(0.85 0.075 259); color: oklch(0.42 0.160 259); font-weight: 600; }
 
-    /* Badges de prioridad */
-    .prioridad-badge {
-      display: inline-block; padding: 3px 10px; border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-    }
-    .prioridad-badge--1 { background: #f1f5f9; color: #475569; }
-    .prioridad-badge--2 { background: #fefce8; color: #854d0e; }
-    .prioridad-badge--3 { background: #fff7ed; color: #c2410c; }
-    .prioridad-badge--4 { background: #fef2f2; color: #991b1b; }
+    .prioridad-badge { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px 0 7px; border-radius: 9999px; font-size: 12px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; }
+    .prioridad-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.85; flex-shrink: 0; }
+    .prioridad-badge--1 { color: var(--n-600, #4e566a); background: var(--n-75, #f1f3f7); border-color: var(--border-default, #dfe3eb); }
+    .prioridad-badge--2 { color: oklch(0.42 0.160 259); background: oklch(0.96 0.030 259); }
+    .prioridad-badge--3 { color: oklch(0.45 0.130 65);  background: oklch(0.96 0.045 80); }
+    .prioridad-badge--4 { color: oklch(0.45 0.150 25);  background: oklch(0.95 0.035 25); }
 
-    /* Info box */
-    .info-box {
-      display: flex; gap: 12px; align-items: flex-start;
-      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
-      padding: 16px 18px;
-    }
-    .info-box mat-icon { color: #3b82f6; margin-top: 2px; flex-shrink: 0; }
-    .info-box strong { font-size: 13px; color: #1e3a8a; }
-    .info-box p { font-size: 13px; color: #3730a3; margin: 4px 0 0; line-height: 1.5; }
+    .info-box { display: flex; gap: 12px; padding: 14px 16px; background: oklch(0.96 0.030 259); border: 1px solid oklch(0.88 0.050 259); border-radius: 10px; }
+    .info-box mat-icon { font-size: 18px; width: 18px; height: 18px; color: oklch(0.42 0.160 259); flex-shrink: 0; margin-top: 1px; }
+    .info-box strong { font-size: 13px; color: oklch(0.28 0.130 259); font-weight: 600; }
+    .info-box p { font-size: 13px; color: oklch(0.35 0.130 259); margin: 4px 0 0; line-height: 1.6; }
 
-    .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 64px; color: #94a3b8; }
-    .spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin .8s linear infinite; }
+    .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 64px; color: var(--text-muted, #8a92a3); }
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--border-subtle, #e9ecf2); border-top-color: oklch(0.55 0.190 259); border-radius: 50%; animation: spin .8s linear infinite; }
   `],
 })
 export class SlaAdminComponent implements OnInit {

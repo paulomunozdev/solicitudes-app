@@ -122,51 +122,68 @@ const ROL_OPTIONS = [
     </div>
   `,
   styles: [`
-    :host { display: flex; flex-direction: column; flex: 1; padding: 32px; gap: 20px; }
-    .page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; }
-    .page-subtitle { font-size: 13px; color: #64748b; margin: 4px 0 0; }
+    :host { display: flex; flex-direction: column; flex: 1; padding: 28px 32px; gap: 20px; }
 
-    .table-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden; }
-    .table { width: 100%; border-collapse: collapse; }
+    .page-title { font-size: 20px; font-weight: 600; color: var(--text-primary, #161b26); letter-spacing: -0.015em; margin: 0; }
+    .page-subtitle { font-size: 13px; color: var(--text-tertiary, #6b7386); margin: 4px 0 0; }
+
+    .table-card { background: var(--n-0, #fff); border: 1px solid var(--border-subtle, #e9ecf2); border-radius: 12px; overflow: hidden; }
+    .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
     .table th {
-      text-align: left; padding: 12px 16px;
-      font-size: 11px; font-weight: 600; color: #64748b;
-      text-transform: uppercase; letter-spacing: .6px;
-      background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+      text-align: left; font-size: 11.5px; font-weight: 500;
+      color: var(--text-tertiary, #6b7386); letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 12px 16px; border-bottom: 1px solid var(--border-subtle, #e9ecf2);
+      background: var(--n-25, #fcfcfd); white-space: nowrap;
     }
-    .table-row td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .table-row td {
+      padding: 12px 16px; border-bottom: 1px solid var(--border-subtle, #e9ecf2);
+      color: var(--text-secondary, #353c4d); vertical-align: middle; height: 52px;
+    }
     .table-row:last-child td { border-bottom: none; }
+    .table-row { transition: background 120ms ease; }
+    .table-row:hover { background: var(--n-25, #fcfcfd); }
 
-    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-cell { display: flex; align-items: center; gap: 12px; }
     .avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: #334155; color: #94a3b8;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 600; font-size: 14px; flex-shrink: 0;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--n-200, #cfd4de); color: var(--n-600, #4e566a);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; flex-shrink: 0; user-select: none;
     }
     .avatar--img { object-fit: cover; }
-    .user-name { font-size: 14px; font-weight: 500; color: #1e293b; margin: 0; }
-    .user-email { font-size: 12px; color: #64748b; margin: 0; }
+    .user-name { font-size: 13.5px; font-weight: 500; color: var(--text-primary, #161b26); margin: 0; line-height: 1.2; }
+    .user-email { font-size: 12px; color: var(--text-muted, #8a92a3); margin: 2px 0 0; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .rol-badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-    .muted { font-size: 13px; color: #64748b; }
+    .rol-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 9999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+    .muted { font-size: 12.5px; color: var(--text-tertiary, #6b7386); font-variant-numeric: tabular-nums; }
 
     .field-select {
-      border: 1px solid #e2e8f0; border-radius: 6px;
-      padding: 6px 10px; font-size: 13px; color: #374151;
-      background: #fff; cursor: pointer; outline: none;
+      height: 30px; padding: 0 26px 0 8px;
+      background: var(--n-0, #fff); border: 1px solid var(--border-default, #dfe3eb);
+      border-radius: 6px; font-size: 13px; color: var(--text-primary, #161b26);
+      outline: none; cursor: pointer; font-family: inherit; appearance: none;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7386' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
     }
+    .field-select:focus { border-color: oklch(0.55 0.190 259); box-shadow: 0 0 0 2px oklch(0.78 0.130 259 / 0.20); }
 
     .col-actions { display: flex; gap: 4px; justify-content: flex-end; }
-    .icon-btn { background: none; border: none; cursor: pointer; color: #64748b; padding: 6px; border-radius: 6px; display: flex; }
-    .icon-btn:hover { background: #f1f5f9; }
-    .icon-btn--save { color: #15803d; }
-    .icon-btn--save:hover { background: #dcfce7; }
-    .icon-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .icon-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: none; border: 1px solid var(--border-default, #dfe3eb);
+      color: var(--text-muted, #8a92a3); cursor: pointer; font-family: inherit;
+      transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+    }
+    .icon-btn:hover { background: var(--n-75, #f1f3f7); color: var(--text-primary, #161b26); border-color: var(--border-strong, #cfd4de); }
+    .icon-btn mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .icon-btn--save { background: oklch(0.96 0.035 155); border-color: oklch(0.88 0.060 155); color: oklch(0.42 0.120 155); }
+    .icon-btn--save:hover { background: oklch(0.90 0.070 155); }
 
-    .loading-state, .empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 12px; color: #94a3b8; }
+    .loading-state, .empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 12px; color: var(--text-muted, #8a92a3); }
     .empty-state mat-icon { font-size: 40px; width: 40px; height: 40px; }
-    .spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin .8s linear infinite; }
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--border-subtle, #e9ecf2); border-top-color: oklch(0.55 0.190 259); border-radius: 50%; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   `],
 })

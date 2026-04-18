@@ -143,59 +143,44 @@ Chart.register(...registerables);
     }
   `,
   styles: [`
-    :host { display: flex; flex-direction: column; flex: 1; padding: 32px; gap: 20px; overflow-y: auto; }
+    :host { display: flex; flex-direction: column; flex: 1; padding: 28px 32px 48px; gap: 20px; overflow-y: auto; }
 
     .page-header { display: flex; align-items: flex-start; justify-content: space-between; }
-    .page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; }
-    .page-subtitle { font-size: 13px; color: #64748b; margin: 4px 0 0; }
+    .page-title { font-size: 20px; font-weight: 600; color: var(--text-primary, #161b26); letter-spacing: -0.015em; margin: 0; }
+    .page-subtitle { font-size: 13px; color: var(--text-tertiary, #6b7386); margin: 4px 0 0; }
 
-    /* KPIs */
-    .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    .kpi-row { display: flex; gap: 12px; flex-wrap: wrap; }
     .kpi-spacer { flex: 1; min-width: 140px; }
     .kpi-card {
       flex: 1; min-width: 140px;
       border-radius: 12px; padding: 18px 20px;
       display: flex; align-items: center; gap: 14px;
-      cursor: pointer; transition: transform .15s, box-shadow .15s;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      cursor: pointer; transition: box-shadow 200ms ease;
     }
-    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
-    .kpi-card mat-icon { font-size: 26px; width: 26px; height: 26px; opacity: .85; flex-shrink: 0; }
-    .kpi-value { font-size: 26px; font-weight: 700; margin: 0; line-height: 1; }
-    .kpi-label { font-size: 11px; margin: 4px 0 0; opacity: .8; }
+    .kpi-card:hover { box-shadow: 0 4px 12px rgba(16,24,40,0.10); }
+    .kpi-card mat-icon { font-size: 24px; width: 24px; height: 24px; opacity: .85; flex-shrink: 0; }
+    .kpi-value { font-size: 26px; font-weight: 700; margin: 0; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .kpi-label { font-size: 11px; margin: 4px 0 0; }
 
-    .kpi-card--blue   { background: #eff6ff; color: #1d4ed8; }
-    .kpi-card--orange { background: #fff7ed; color: #c2410c; }
-    .kpi-card--indigo { background: #eef2ff; color: #4338ca; }
-    .kpi-card--green  { background: #f0fdf4; color: #15803d; }
-    .kpi-card--purple { background: #f5f3ff; color: #7c3aed; }
-    .kpi-card--teal   { background: #f0fdfa; color: #0f766e; }
-    .kpi-card--red    { background: #fef2f2; color: #dc2626; }
-    .kpi-card--slate  { background: #f8fafc; color: #475569; }
+    .kpi-card--blue   { background: oklch(0.96 0.030 259); color: oklch(0.42 0.160 259); }
+    .kpi-card--orange { background: oklch(0.96 0.045 80);  color: oklch(0.45 0.130 65); }
+    .kpi-card--indigo { background: oklch(0.96 0.030 259); color: oklch(0.42 0.160 259); }
+    .kpi-card--green  { background: oklch(0.96 0.035 155); color: oklch(0.42 0.120 155); }
+    .kpi-card--purple { background: oklch(0.96 0.030 295); color: oklch(0.42 0.140 295); }
+    .kpi-card--teal   { background: oklch(0.96 0.030 259); color: oklch(0.42 0.160 259); }
+    .kpi-card--red    { background: oklch(0.95 0.035 25);  color: oklch(0.45 0.150 25); }
+    .kpi-card--slate  { background: var(--n-75, #f1f3f7);  color: var(--n-600, #4e566a); }
 
-    /* Charts */
     .charts-row { display: flex; gap: 16px; flex-wrap: wrap; }
-    .chart-card {
-      background: #fff; border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
-      padding: 20px 24px; flex: 1; min-width: 280px;
-    }
+    .chart-card { background: var(--n-0, #fff); border: 1px solid var(--border-subtle, #e9ecf2); border-radius: 12px; padding: 20px 24px; flex: 1; min-width: 280px; overflow: hidden; }
     .chart-card--wide { flex: 2; min-width: 380px; }
-    .chart-title { font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 16px; text-transform: uppercase; letter-spacing: .4px; }
+    .chart-title { font-size: 13px; font-weight: 600; color: var(--text-primary, #161b26); margin: 0 0 16px; letter-spacing: -0.01em; }
     .chart-wrap { position: relative; height: 220px; }
     .chart-wrap--center { display: flex; align-items: center; justify-content: center; }
-    .chart-empty { font-size: 13px; color: #94a3b8; text-align: center; padding: 60px 0; margin: 0; }
+    .chart-empty { font-size: 13px; color: var(--text-muted, #8a92a3); text-align: center; padding: 60px 0; margin: 0; }
 
-    /* Loading */
-    .loading-state {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; padding: 64px; gap: 12px; color: #94a3b8;
-    }
-    .spinner {
-      width: 32px; height: 32px; border: 3px solid #e2e8f0;
-      border-top-color: #3b82f6; border-radius: 50%;
-      animation: spin .8s linear infinite;
-    }
+    .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px; gap: 12px; color: var(--text-muted, #8a92a3); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border-subtle, #e9ecf2); border-top-color: oklch(0.55 0.190 259); border-radius: 50%; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   `],
 })
@@ -236,6 +221,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   renderCharts(): void {
     const s = this.stats()!;
+    const tooltip = {
+      backgroundColor: '#161b26', titleColor: '#fff',
+      bodyColor: 'rgba(255,255,255,0.75)', padding: 10, cornerRadius: 8,
+      titleFont: { family: "'Geist', sans-serif", size: 12, weight: 600 },
+      bodyFont:  { family: "'Geist', sans-serif", size: 12 },
+    };
+    const tickStyle = { color: '#6b7386', font: { family: "'Geist', sans-serif", size: 11 } };
 
     // ── Línea: solicitudes por día ─────────────────────────────
     this.charts.push(new Chart(this.lineChartRef.nativeElement, {
@@ -245,17 +237,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         datasets: [{
           label: 'Solicitudes',
           data: s.porDia.map(d => d.cantidad),
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59,130,246,.1)',
+          borderColor: 'oklch(0.55 0.190 259)',
+          backgroundColor: 'oklch(0.55 0.190 259 / 0.08)',
           borderWidth: 2, pointRadius: 3, fill: true, tension: 0.4,
         }],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false }, tooltip },
         scales: {
-          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, ...tickStyle }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } },
+          x: { grid: { display: false }, ticks: tickStyle, border: { display: false } },
         },
       },
     }));
@@ -267,14 +259,29 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         labels: ['Pendiente', 'En Revisión', 'En Desarrollo', 'Completada', 'Rechazada'],
         datasets: [{
           data: [s.pendientes, s.enRevision, s.enDesarrollo, s.completadas, s.rechazadas],
-          backgroundColor: ['#fed7aa', '#bfdbfe', '#bbf7d0', '#ddd6fe', '#fecaca'],
-          borderColor:     ['#f97316', '#3b82f6', '#22c55e', '#8b5cf6', '#ef4444'],
+          backgroundColor: [
+            'oklch(0.96 0.045 80)',
+            'oklch(0.88 0.085 259)',
+            'oklch(0.88 0.080 295)',
+            'oklch(0.88 0.080 155)',
+            'oklch(0.88 0.080 25)',
+          ],
+          borderColor: [
+            'oklch(0.55 0.150 70)',
+            'oklch(0.48 0.185 259)',
+            'oklch(0.42 0.140 295)',
+            'oklch(0.42 0.120 155)',
+            'oklch(0.45 0.150 25)',
+          ],
           borderWidth: 2,
         }],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, padding: 16, color: '#6b7386', font: { family: "'Geist', sans-serif", size: 12 } } },
+          tooltip,
+        },
         cutout: '65%',
       },
     }));
@@ -288,18 +295,18 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           datasets: [{
             label: 'Solicitudes',
             data: s.porBu.map(x => x.cantidad),
-            backgroundColor: '#bfdbfe',
-            borderColor: '#3b82f6',
+            backgroundColor: 'oklch(0.88 0.085 259)',
+            borderColor: 'oklch(0.55 0.190 259)',
             borderWidth: 1, borderRadius: 4,
           }],
         },
         options: {
           indexAxis: 'y',
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { legend: { display: false }, tooltip },
           scales: {
-            x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-            y: { grid: { display: false } },
+            x: { beginAtZero: true, ticks: { stepSize: 1, ...tickStyle }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } },
+            y: { grid: { display: false }, ticks: tickStyle, border: { display: false } },
           },
         },
       }));
@@ -314,18 +321,18 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           datasets: [{
             label: 'Solicitudes',
             data: s.porCategoria.map(x => x.cantidad),
-            backgroundColor: '#c7d2fe',
-            borderColor: '#6366f1',
+            backgroundColor: 'oklch(0.88 0.080 295)',
+            borderColor: 'oklch(0.55 0.170 295)',
             borderWidth: 1, borderRadius: 4,
           }],
         },
         options: {
           indexAxis: 'y',
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { legend: { display: false }, tooltip },
           scales: {
-            x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-            y: { grid: { display: false } },
+            x: { beginAtZero: true, ticks: { stepSize: 1, ...tickStyle }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } },
+            y: { grid: { display: false }, ticks: tickStyle, border: { display: false } },
           },
         },
       }));
@@ -333,10 +340,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // ── Barra: por prioridad ───────────────────────────────────
     const prioColors: Record<string, { bg: string; border: string }> = {
-      Baja:    { bg: '#e2e8f0', border: '#64748b' },
-      Media:   { bg: '#fef9c3', border: '#ca8a04' },
-      Alta:    { bg: '#fed7aa', border: '#f97316' },
-      Critica: { bg: '#fecaca', border: '#ef4444' },
+      Baja:    { bg: 'oklch(0.78 0.040 259)', border: 'oklch(0.55 0.090 259)' },
+      Media:   { bg: 'oklch(0.88 0.085 259)', border: 'oklch(0.55 0.190 259)' },
+      Alta:    { bg: 'oklch(0.96 0.045 80)',  border: 'oklch(0.55 0.150 70)' },
+      Critica: { bg: 'oklch(0.95 0.035 25)',  border: 'oklch(0.58 0.180 25)' },
     };
     this.charts.push(new Chart(this.prioridadChartRef.nativeElement, {
       type: 'bar',
@@ -345,17 +352,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         datasets: [{
           label: 'Solicitudes',
           data: s.porPrioridad.map(x => x.cantidad),
-          backgroundColor: s.porPrioridad.map(x => prioColors[x.nombre]?.bg ?? '#e2e8f0'),
-          borderColor:     s.porPrioridad.map(x => prioColors[x.nombre]?.border ?? '#64748b'),
+          backgroundColor: s.porPrioridad.map(x => prioColors[x.nombre]?.bg ?? 'oklch(0.90 0.030 259)'),
+          borderColor:     s.porPrioridad.map(x => prioColors[x.nombre]?.border ?? 'oklch(0.60 0.120 259)'),
           borderWidth: 1, borderRadius: 4,
         }],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false }, tooltip },
         scales: {
-          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, ...tickStyle }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } },
+          x: { grid: { display: false }, ticks: tickStyle, border: { display: false } },
         },
       },
     }));
@@ -370,23 +377,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             {
               label: 'Asignadas',
               data: s.porResolutor.map(x => x.asignadas),
-              backgroundColor: '#bfdbfe', borderColor: '#3b82f6',
+              backgroundColor: 'oklch(0.88 0.085 259)', borderColor: 'oklch(0.55 0.190 259)',
               borderWidth: 1, borderRadius: 4,
             },
             {
               label: 'Completadas',
               data: s.porResolutor.map(x => x.completadas),
-              backgroundColor: '#bbf7d0', borderColor: '#22c55e',
+              backgroundColor: 'oklch(0.88 0.080 155)', borderColor: 'oklch(0.55 0.150 155)',
               borderWidth: 1, borderRadius: 4,
             },
           ],
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, padding: 16, color: '#6b7386', font: { family: "'Geist', sans-serif", size: 12 } } },
+            tooltip,
+          },
           scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-            x: { grid: { display: false } },
+            y: { beginAtZero: true, ticks: { stepSize: 1, ...tickStyle }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } },
+            x: { grid: { display: false }, ticks: tickStyle, border: { display: false } },
           },
         },
       }));

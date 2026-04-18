@@ -12,18 +12,24 @@ import { EstadoSolicitud, ESTADO_LABELS } from '../../../core/models/solicitud.m
     </span>
   `,
   styles: [`
+    :host { display: inline-block; }
     .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 22px; padding: 0 8px 0 7px;
+      border-radius: 9999px; font-size: 12px; font-weight: 500;
+      line-height: 1; white-space: nowrap; border: 1px solid transparent;
+      font-family: inherit;
     }
-    .badge--1 { background: #fff3e0; color: #e65100; }
-    .badge--2 { background: #e3f2fd; color: #1565c0; }
-    .badge--3 { background: #e8f5e9; color: #2e7d32; }
-    .badge--4 { background: #f3e5f5; color: #6a1b9a; }
-    .badge--5 { background: #ffebee; color: #b71c1c; }
+    .badge::before {
+      content: ""; width: 6px; height: 6px;
+      border-radius: 50%; background: currentColor;
+      opacity: 0.85; flex-shrink: 0;
+    }
+    .badge--1 { color: oklch(0.45 0.130 65);  background: oklch(0.96 0.045 80); }
+    .badge--2 { color: oklch(0.42 0.160 259); background: oklch(0.96 0.030 259); }
+    .badge--3 { color: oklch(0.42 0.140 295); background: oklch(0.96 0.030 295); }
+    .badge--4 { color: oklch(0.42 0.120 155); background: oklch(0.96 0.035 155); }
+    .badge--5 { color: oklch(0.45 0.150 25);  background: oklch(0.95 0.035 25); }
   `]
 })
 export class EstadoBadgeComponent {
