@@ -164,6 +164,13 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// ── Migraciones automáticas al iniciar ────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 // ── Security headers ──────────────────────────────────────────
 app.Use(async (context, next) =>
 {
