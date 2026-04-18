@@ -167,8 +167,16 @@ var app = builder.Build();
 // ── Migraciones automáticas al iniciar ────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "No se pudieron aplicar las migraciones al iniciar.");
+    }
 }
 
 // ── Security headers ──────────────────────────────────────────
